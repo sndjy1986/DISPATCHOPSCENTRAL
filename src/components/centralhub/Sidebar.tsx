@@ -38,6 +38,7 @@ import { onSnapshot, doc, db } from '../../lib/firebase';
 import type { SidebarLink as SidebarLinkType } from '../../lib/firebase';
 import { Modal } from './Modal';
 import { AugustSheetModal } from './AugustSheetModal';
+import { ShiftReportModal } from './ShiftReportModal';
 import { ThemeSelectorButton } from './ThemeSelector';
 
 const iconMap: Record<string, any> = {
@@ -93,6 +94,7 @@ export function Sidebar() {
   const [isToolsOpen, setIsToolsOpen] = React.useState(false);
   const [isSysLinkOpen, setIsSysLinkOpen] = React.useState(false);
   const [isAugustSheetOpen, setIsAugustSheetOpen] = React.useState(false);
+  const [isShiftReportOpen, setIsShiftReportOpen] = React.useState(false);
   const [passcode, setPasscode] = React.useState('');
   const [authStatus, setAuthStatus] = React.useState('');
 
@@ -170,13 +172,42 @@ export function Sidebar() {
                 <span className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Core Command</span>
               </div>
               <div className="space-y-0.5">
-                {activeCoreCommands.filter((item) => {
-                  if (item.id === 'report') {
-                    return terminalUser?.role?.toLowerCase() !== 'dispatcher';
-                  }
-                  return true;
-                }).map((item) => {
+                {activeCoreCommands.map((item) => {
                   const IconComponent = iconMap[item.icon] || LinkIcon;
+                  const isReport = item.id === 'report';
+
+                  if (isReport) {
+                    return (
+                      <motion.div key={item.id} {...bouncyProps} className="flex items-center gap-1 group/item">
+                        <button
+                          type="button"
+                          onClick={() => setIsShiftReportOpen(true)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 flex-1 text-left relative cursor-pointer",
+                            isShiftReportOpen ? 'text-text-main font-black bg-blue-500/15 border border-blue-400/30' : 'text-text-dim hover:text-text-main hover:bg-blue-500/10'
+                          )}
+                        >
+                          <IconComponent className={cn("w-4 h-4 flex-shrink-0 transition-colors relative z-10", isShiftReportOpen ? "text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "group-hover/item:text-blue-300")} />
+                          <span className="text-[11px] font-black uppercase tracking-widest relative z-10">{item.label}</span>
+                          <span className="ml-auto text-[8px] font-bold text-blue-400/80 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-400/20 uppercase tracking-wider">Modal</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
+                            window.open(standaloneUrl, 'ShiftReportStandalone', 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+                          }}
+                          title="Open Standalone Window by itself"
+                          className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all border border-transparent hover:border-emerald-500/30 opacity-70 group-hover/item:opacity-100 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    );
+                  }
+
                   return (
                     <motion.div key={item.path} {...bouncyProps}>
                       <NavLink
@@ -625,6 +656,11 @@ export function Sidebar() {
       <AugustSheetModal 
         isOpen={isAugustSheetOpen} 
         onClose={() => setIsAugustSheetOpen(false)} 
+      />
+
+      <ShiftReportModal 
+        isOpen={isShiftReportOpen} 
+        onClose={() => setIsShiftReportOpen(false)} 
       />
     </aside>
   );

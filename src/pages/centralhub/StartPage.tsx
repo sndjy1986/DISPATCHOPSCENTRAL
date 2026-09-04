@@ -23,8 +23,10 @@ import {
   Palette,
   FileSpreadsheet,
   Maximize2,
+  ExternalLink,
 } from "lucide-react";
 import { AugustSheetModal } from "../../components/centralhub/AugustSheetModal";
+import { ShiftReportModal } from "../../components/centralhub/ShiftReportModal";
 import { ThemeSelectorButton } from "../../components/centralhub/ThemeSelector";
 import { WeatherDashboard } from "../../components/centralhub/WeatherDashboard";
 import { ScannerVFD } from "../../components/centralhub/ScannerVFD";
@@ -1442,6 +1444,7 @@ function TimeWidgetContent({
 function ShiftReportAddContent({ onClose }: { onClose: () => void }) {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleAdd = async () => {
     if (!content.trim()) return;
@@ -1462,32 +1465,70 @@ function ShiftReportAddContent({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handlePopout = () => {
+    const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
+    window.open(
+      standaloneUrl,
+      'ShiftReportWindow',
+      'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
+    );
+  };
+
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-4 p-4">
+      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+          <FileText className="w-3.5 h-3.5 text-blue-400" />
+          Shift Operations
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border border-blue-400/20 flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            Open Modal
+          </button>
+          <button
+            type="button"
+            onClick={handlePopout}
+            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-white rounded-lg transition-all border border-emerald-400/20 cursor-pointer shadow-sm"
+            title="Pop out standalone window by itself"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-          Event Description
+          Quick Shift Update Entry
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={4}
-          className="tactical-input w-full p-6 text-white font-mono text-sm leading-relaxed"
+          rows={3}
+          className="tactical-input w-full p-4 text-white font-mono text-xs leading-relaxed"
           placeholder="ENTER OPERATIONAL UPDATE TO BE INCLUDED IN SHIFT REPORT..."
         />
       </div>
       <button
         onClick={handleAdd}
         disabled={saving}
-        className="w-full h-16 bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-4"
+        className="w-full h-12 bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 text-xs cursor-pointer"
       >
         {saving ? (
-          <Activity className="w-5 h-5 animate-spin" />
+          <Activity className="w-4 h-4 animate-spin" />
         ) : (
-          <PlusCircle className="w-5 h-5" />
+          <PlusCircle className="w-4 h-4" />
         )}
         Inject into Operation Log
       </button>
+
+      <ShiftReportModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

@@ -35,9 +35,7 @@ export default function App() {
               path="/shift-report" 
               element={
                 <PageWrapper className="overflow-y-auto">
-                  <MatrixPasscodeGate allowedRoles={['root', 'admin', 'shift_lead']}>
-                    <ShiftReport />
-                  </MatrixPasscodeGate>
+                  <ShiftReport />
                 </PageWrapper>
               } 
             />
