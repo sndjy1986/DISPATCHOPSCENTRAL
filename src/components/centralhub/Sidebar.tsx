@@ -209,11 +209,11 @@ export function Sidebar() {
                   }
 
                   return (
-                    <motion.div key={item.path} {...bouncyProps}>
+                    <motion.div key={item.path} {...bouncyProps} className="flex items-center gap-1 group/item">
                       <NavLink
                         to={item.path}
                         className={({ isActive }) => `
-                          flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 group relative
+                          flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 flex-1 relative
                             ${isActive ? 'text-text-main font-black' : 'text-text-dim hover:text-text-main hover:bg-blue-500/10'}
                         `}
                       >
@@ -232,6 +232,19 @@ export function Sidebar() {
                           </>
                         )}
                       </NavLink>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const standaloneUrl = window.location.href.split('#')[0] + '#' + item.path + '?standalone=true';
+                          window.open(standaloneUrl, `Popout_${item.id}`, 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+                        }}
+                        title={`Pop out ${item.label} in independent window`}
+                        className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all border border-transparent hover:border-blue-500/30 opacity-0 group-hover/item:opacity-100 cursor-pointer shrink-0"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </motion.div>
                   );
                 })}
@@ -267,19 +280,49 @@ export function Sidebar() {
               <div className="space-y-0.5">
                 {activePortalLinks.map((item) => {
                   const IconComponent = iconMap[item.icon] || LinkIcon;
+                  if (item.external) {
+                    return (
+                      <motion.a
+                        key={item.path}
+                        href={item.path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        {...bouncyProps}
+                        className="flex items-center gap-3 px-4 py-1.5 rounded-xl transition-all duration-200 text-text-dim hover:bg-blue-500/10 hover:text-text-main border border-transparent hover:border-blue-400/10 group relative"
+                      >
+                        <IconComponent className="w-4 h-4 flex-shrink-0 group-hover:text-emerald-400 transition-colors" />
+                        <span className="text-[11px] font-bold uppercase tracking-widest">{item.label}</span>
+                        <ExternalLink className="w-2.5 h-2.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </motion.a>
+                    );
+                  }
+
                   return (
-                    <motion.a
-                      key={item.path}
-                      href={item.path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      {...bouncyProps}
-                      className="flex items-center gap-3 px-4 py-1.5 rounded-xl transition-all duration-200 text-text-dim hover:bg-blue-500/10 hover:text-text-main border border-transparent hover:border-blue-400/10 group relative"
-                    >
-                      <IconComponent className="w-4 h-4 flex-shrink-0 group-hover:text-emerald-400 transition-colors" />
-                      <span className="text-[11px] font-bold uppercase tracking-widest">{item.label}</span>
-                      <ExternalLink className="w-2.5 h-2.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </motion.a>
+                    <motion.div key={item.path} {...bouncyProps} className="flex items-center gap-1 group/item">
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) => `
+                          flex items-center gap-3 px-4 py-1.5 rounded-xl transition-all duration-200 flex-1 relative
+                          ${isActive ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-400/20' : 'text-text-dim hover:bg-blue-500/10 hover:text-text-main border border-transparent'}
+                        `}
+                      >
+                        <IconComponent className="w-4 h-4 flex-shrink-0 group-hover/item:text-emerald-400 transition-colors" />
+                        <span className="text-[11px] font-bold uppercase tracking-widest">{item.label}</span>
+                      </NavLink>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const standaloneUrl = window.location.href.split('#')[0] + '#' + item.path + '?standalone=true';
+                          window.open(standaloneUrl, `Popout_${item.id}`, 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+                        }}
+                        title={`Pop out ${item.label} in independent window`}
+                        className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all border border-transparent hover:border-emerald-500/30 opacity-0 group-hover/item:opacity-100 cursor-pointer shrink-0"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -359,22 +402,37 @@ export function Sidebar() {
                       );
                     }
                     return (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setIsToolsOpen(false)}
-                        className={({ isActive }) => cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group/item",
-                          isActive ? "bg-rose-500/15 text-rose-300 border border-rose-400/30 font-bold backdrop-blur-sm shadow-sm" : "text-text-dim hover:bg-blue-500/15 hover:text-text-main border border-transparent hover:border-blue-400/20"
-                        )}
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <IconComponent className={cn("w-3.5 h-3.5", isActive ? "text-rose-400" : "group-hover/item:text-rose-300")} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
-                          </>
-                        )}
-                      </NavLink>
+                      <div key={item.path} className="flex items-center gap-1 group/tool-item">
+                        <NavLink
+                          to={item.path}
+                          onClick={() => setIsToolsOpen(false)}
+                          className={({ isActive }) => cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 flex-1",
+                            isActive ? "bg-rose-500/15 text-rose-300 border border-rose-400/30 font-bold backdrop-blur-sm shadow-sm" : "text-text-dim hover:bg-blue-500/15 hover:text-text-main border border-transparent hover:border-blue-400/20"
+                          )}
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <IconComponent className={cn("w-3.5 h-3.5", isActive ? "text-rose-400" : "group-hover/tool-item:text-rose-300")} />
+                              <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                            </>
+                          )}
+                        </NavLink>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsToolsOpen(false);
+                            const standaloneUrl = window.location.href.split('#')[0] + '#' + item.path + '?standalone=true';
+                            window.open(standaloneUrl, `Popout_${item.id}`, 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+                          }}
+                          title={`Pop out ${item.label} in independent window`}
+                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all border border-transparent hover:border-rose-500/30 opacity-0 group-hover/tool-item:opacity-100 cursor-pointer shrink-0"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>

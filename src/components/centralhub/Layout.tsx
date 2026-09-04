@@ -4,7 +4,7 @@ import { useTerminal } from '../../context/TerminalContext';
 import { EmergencyBackground } from './EmergencyBackground';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, signIn, googleProvider } from '../../lib/firebase';
-import { Shield, AlertTriangle, Info, Bell, AlertCircle, CheckCircle, X as CloseIcon } from 'lucide-react';
+import { Shield, AlertTriangle, Info, Bell, AlertCircle, CheckCircle, X as CloseIcon, ExternalLink, Maximize2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -34,10 +34,16 @@ export function Layout({ children }: LayoutProps) {
     }
   };
 
-  const isStandalone = 
+  const searchParams = new URLSearchParams(location.search);
+  const isShiftReportStandalone = 
     location.pathname === '/single-shift-report' || 
-    location.pathname === '/shift-report/standalone' ||
-    new URLSearchParams(location.search).get('standalone') === 'true';
+    location.pathname === '/shift-report/standalone';
+  const isStandalone = 
+    isShiftReportStandalone || 
+    searchParams.get('standalone') === 'true' ||
+    searchParams.get('standalone') === '1' ||
+    new URLSearchParams(window.location.search).get('standalone') === 'true' ||
+    new URLSearchParams(window.location.search).get('standalone') === '1';
 
   const NOAA_GOES19_GEOCOLOR_URL = 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/FD/GEOCOLOR/10848x10848.jpg';
   const [standaloneSatelliteBg, setStandaloneSatelliteBg] = useState<string>(
@@ -46,7 +52,7 @@ export function Layout({ children }: LayoutProps) {
 
   // Auto-refresh NOAA GOES-19 satellite image every 1 hour
   useEffect(() => {
-    if (!isStandalone) return;
+    if (!isShiftReportStandalone) return;
 
     const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -54,7 +60,6 @@ export function Layout({ children }: LayoutProps) {
       const timestamp = Date.now();
       const freshUrl = `${NOAA_GOES19_GEOCOLOR_URL}?t=${timestamp}`;
 
-      // Preload the high-resolution satellite imagery before updating state to avoid flickering
       const img = new Image();
       img.src = freshUrl;
       img.onload = () => {
@@ -64,9 +69,35 @@ export function Layout({ children }: LayoutProps) {
 
     const intervalId = setInterval(fetchLatestSatelliteImage, REFRESH_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [isStandalone]);
+  }, [isShiftReportStandalone]);
 
-  const activeBackgroundImage = isStandalone ? standaloneSatelliteBg : appBackgroundImage;
+  const activeBackgroundImage = isShiftReportStandalone 
+    ? (appBackgroundImage || standaloneSatelliteBg) 
+    : appBackgroundImage;
+
+  const handlePopOutCurrentPage = () => {
+    const baseUrl = window.location.href.split('#')[0];
+    const hashRoute = location.pathname;
+    const currentParams = new URLSearchParams(location.search);
+    currentParams.set('standalone', 'true');
+    const popoutUrl = `${baseUrl}#${hashRoute}?${currentParams.toString()}`;
+    const pageTitle = hashRoute.replace(/[^a-zA-Z0-9]/g, '_') || 'Dashboard';
+    window.open(
+      popoutUrl,
+      `Popout_${pageTitle}`,
+      'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
+    );
+  };
+
+  const handleOpenFullApp = () => {
+    const baseUrl = window.location.href.split('#')[0];
+    const hashRoute = location.pathname;
+    const currentParams = new URLSearchParams(location.search);
+    currentParams.delete('standalone');
+    const paramStr = currentParams.toString();
+    const targetUrl = `${baseUrl}#${hashRoute}${paramStr ? `?${paramStr}` : ''}`;
+    window.open(targetUrl, '_blank');
+  };
 
   return (
     <div className="h-screen bg-brand-bg text-text-main relative overflow-hidden font-sans transition-colors duration-500" data-theme={appTheme}>
@@ -89,9 +120,54 @@ export function Layout({ children }: LayoutProps) {
       <EmergencyBackground />
       
       {!isStandalone && <Sidebar />}
+
+      {/* Standalone Window Indicator & Controls OR Floating Pop-Out Button */}
+      {isStandalone ? (
+        <aside aria-label="Standalone Window Controls" className="fixed top-3 right-5 z-[150] flex items-center gap-2 bg-slate-950/85 border border-emerald-500/30 backdrop-blur-xl px-3 py-1.5 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-2 pr-2.5 border-r border-white/10">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+              Independent Window
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenFullApp}
+            title="Open Main Terminal (with Sidebar)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-blue-500/20 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent hover:border-blue-400/30"
+          >
+            <Maximize2 className="w-3 h-3 text-blue-400" />
+            <span className="hidden sm:inline">Main Terminal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => window.close()}
+            title="Close this window"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 transition-all cursor-pointer border border-transparent hover:border-rose-500/30"
+          >
+            <CloseIcon className="w-3.5 h-3.5" />
+          </button>
+        </aside>
+      ) : (
+        <button
+          type="button"
+          onClick={handlePopOutCurrentPage}
+          title="Pop out this page into an independent window without sidebar"
+          className="fixed top-3 right-6 z-40 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/75 hover:bg-blue-600/20 text-slate-300 hover:text-blue-300 border border-blue-400/20 hover:border-blue-400/50 backdrop-blur-xl shadow-lg transition-all duration-200 text-[10px] font-black uppercase tracking-widest group cursor-pointer"
+        >
+          <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+          <span className="hidden md:inline">Pop Out Window</span>
+        </button>
+      )}
+
       <main className={`${isStandalone ? 'w-full pl-0' : 'pl-64'} h-full overflow-y-auto relative z-10 custom-scrollbar`}>
           {/* Global Notification Toast Manager */}
-          <div className="fixed top-8 right-8 z-[200] flex flex-col gap-3 pointer-events-none">
+          <div className="fixed top-14 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
             <AnimatePresence>
               {notifications.map((note) => (
                 <motion.div
