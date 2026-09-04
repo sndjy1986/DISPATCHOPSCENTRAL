@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "Unit": {
+      "title": "Dispatch Unit",
+      "description": "Represents an ambulance or rescue unit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string" },
+        "statusStart": { "type": "string", "format": "date-time" },
+        "pos": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lon": { "type": "number" }
+          }
+        },
+        "stagedAt": { "type": "string" },
+        "isOos": { "type": "boolean" },
+        "isInactive": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "UnitAssignment": {
+      "title": "Unit Assignment",
+      "description": "Links a unit to its temporary posting location",
+      "type": "object",
+      "properties": {
+        "unitId": { "type": "string" },
+        "postName": { "type": "string" },
+        "assignedAt": { "type": "string", "format": "date-time" },
+        "assignedBy": { "type": "string" }
+      },
+      "required": ["unitId", "postName"]
+    },
+    "ShiftReport": {
+      "title": "Shift Report",
+      "description": "Persisted daily shift report data",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "report": { "type": "object" },
+        "savedAt": { "type": "string", "format": "date-time" },
+        "savedBy": { "type": "string" }
+      },
+      "required": ["date", "report"]
+    },
+    "ToneTest": {
+      "title": "Tone Test Record",
+      "description": "Unit readiness status from tone test",
+      "type": "object",
+      "properties": {
+        "unit": { "type": "string" },
+        "time": { "type": "string" },
+        "tenFortyTwo": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CalendarEvent": {
+      "title": "Calendar Event",
+      "description": "Operational event or advisory",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["event", "info", "alert"] },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type"]
+    },
+    "GlobalSettings": {
+      "title": "Global System Settings",
+      "description": "UI and system-wide configurations",
+      "type": "object",
+      "properties": {
+        "emergencyBackgroundOpacity": { "type": "number" },
+        "ambienceMode": { "type": "string" }
+      }
+    },
+    "TerminalUser": {
+      "title": "Terminal User",
+      "description": "Custom authentication for dispatchers",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["dispatcher", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["username", "password", "role"]
+    }
+  },
+  "firestore": {
+    "/units/{unitId}": {
+      "schema": "Unit",
+      "description": "Real-time unit tracking"
+    },
+    "/unitAssignments/{assignmentId}": {
+      "schema": "UnitAssignment",
+      "description": "Temporary unit posting assignments"
+    },
+    "/shiftReports/{reportId}": {
+      "schema": "ShiftReport",
+      "description": "Archived shift reports"
+    },
+    "/toneTests/{testId}": {
+      "schema": "ToneTest",
+      "description": "Unit readiness status"
+    },
+    "/calendar_events/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "Ops calendar events"
+    },
+    "/settings/global": {
+      "schema": "GlobalSettings",
+      "description": "System settings"
+    },
+    "/terminal_users/{username}": {
+      "schema": "TerminalUser",
+      "description": "Dispatcher access credentials"
+    }
+  }
+}

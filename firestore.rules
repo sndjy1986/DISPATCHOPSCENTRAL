@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /settings/global {
+      allow read, write: if true;
+    }
+
+    match /units/{unitId} {
+      allow read, write: if true;
+    }
+
+    match /unitAssignments/{assignmentId} {
+      allow read, write: if true;
+    }
+
+    match /shiftReports/{reportId} {
+      allow read, write: if true;
+    }
+
+    match /reports/{reportId} {
+      allow read, write: if true;
+    }
+
+    match /toneTests/{testId} {
+      allow read, write: if true;
+    }
+
+    match /calendar_events/{eventId} {
+      allow read, write: if true;
+    }
+
+    match /terminal_users/{username} {
+      allow read, write: if true;
+    }
+
+    match /users/{userId}/settings/terminal {
+      allow read, write: if true;
+    }
+
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    match /shift_updates/{updateId} {
+      allow read, write: if true;
+    }
+
+    match /shift_turnovers/{turnoverId} {
+      allow read, write: if true;
+    }
+
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
