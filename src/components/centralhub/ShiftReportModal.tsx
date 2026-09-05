@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ExternalLink, FileText } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 import ShiftReport from '../../pages/ShiftReport';
 
 interface ShiftReportModalProps {
@@ -10,15 +10,6 @@ interface ShiftReportModalProps {
 
 export function ShiftReportModal({ isOpen, onClose }: ShiftReportModalProps) {
   if (!isOpen) return null;
-
-  const handlePopout = () => {
-    const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
-    window.open(
-      standaloneUrl,
-      'ShiftReportWindow',
-      'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
-    );
-  };
 
   return (
     <AnimatePresence>
@@ -49,16 +40,6 @@ export function ShiftReportModal({ isOpen, onClose }: ShiftReportModalProps) {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handlePopout}
-                className="px-4 py-2 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 hover:text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm cursor-pointer"
-                title="Pop out into an independent window on another screen"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Pop Out Window
-              </button>
-
-              <button
-                type="button"
                 onClick={onClose}
                 className="w-9 h-9 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 flex items-center justify-center transition-all border border-white/10 cursor-pointer"
                 title="Close Modal"
@@ -69,7 +50,7 @@ export function ShiftReportModal({ isOpen, onClose }: ShiftReportModalProps) {
           </div>
 
           {/* Modal Body with ShiftReport */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-6 custom-scrollbar relative z-10 bg-brand-bg/95">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-6 custom-scrollbar no-scrollbar relative z-10 bg-brand-bg/95">
             <ShiftReport isModal={true} onClose={onClose} />
           </div>
         </motion.div>

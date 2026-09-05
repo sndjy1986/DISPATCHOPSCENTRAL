@@ -11,7 +11,6 @@ import {
   Clipboard, 
   Mail, 
   Trash2, 
-  ExternalLink, 
   User, 
   Truck, 
   Clock, 
@@ -628,21 +627,6 @@ ${htmlReport}
                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
                    Preview
                  </button>
-
-                 {!isStandalone && (
-                   <button
-                     type="button"
-                     onClick={() => {
-                       const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
-                       window.open(standaloneUrl, 'ShiftReportStandalone', 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
-                     }}
-                     className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-md cursor-pointer"
-                     title="Open Standalone Shift Report in Independent Window"
-                   >
-                     <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                     Standalone View
-                   </button>
-                 )}
               </div>
             </header>
 
