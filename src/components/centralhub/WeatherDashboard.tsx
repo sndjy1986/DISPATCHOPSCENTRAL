@@ -67,6 +67,16 @@ const DEFAULT_MODULES = {
   showCurrent: true
 };
 
+const formatHourTime = (timeStr?: string) => {
+  if (!timeStr) return '--:--';
+  try {
+    const d = new Date(timeStr);
+    return isNaN(d.getTime()) ? '--:--' : format(d, 'HH:mm');
+  } catch {
+    return '--:--';
+  }
+};
+
 const AnimatedWeatherIcon = ({ condition, size = 24, className = "", animated = true }: { condition: string, size?: number, className?: string, animated?: boolean }) => {
   const c = condition?.toLowerCase() || '';
   
@@ -256,8 +266,8 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
         const alertsData = await alertsRes.json();
         const obsData = obsRes.ok ? await obsRes.json() : null;
 
-        const currentPeriod = forecastData.properties.periods[0];
-        const currentHourly = hourlyData.properties.periods[0];
+        const currentPeriod = forecastData?.properties?.periods?.[0] || {};
+        const currentHourly = hourlyData?.properties?.periods?.[0];
         
         // Pressure conversion: Pa to inHg
         const pressurePa = obsData?.properties?.barometricPressure?.value;
@@ -265,33 +275,38 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
         
         // Derive daily from forecast periods (NOAA returns roughly 14 periods, usually Day/Night entries)
         const daily: any[] = [];
-        for (let i = 0; i < forecastData.properties.periods.length; i += 2) {
-          const dayPeriod = forecastData.properties.periods[i];
-          const nightPeriod = forecastData.properties.periods[i + 1];
+        const forecastPeriods = forecastData?.properties?.periods || [];
+        for (let i = 0; i < forecastPeriods.length; i += 2) {
+          const dayPeriod = forecastPeriods[i];
+          const nightPeriod = forecastPeriods[i + 1];
           if (dayPeriod && nightPeriod) {
             daily.push({
-              name: dayPeriod.name,
-              high: Math.max(dayPeriod.temperature, nightPeriod.temperature),
-              low: Math.min(dayPeriod.temperature, nightPeriod.temperature),
-              condition: dayPeriod.shortForecast,
-              icon: dayPeriod.icon,
-              detailed: dayPeriod.detailedForecast
+              name: dayPeriod.name || 'Unknown',
+              high: Math.max(dayPeriod.temperature || 0, nightPeriod.temperature || 0),
+              low: Math.min(dayPeriod.temperature || 0, nightPeriod.temperature || 0),
+              condition: dayPeriod.shortForecast || '',
+              icon: dayPeriod.icon || '',
+              detailed: dayPeriod.detailedForecast || ''
             });
           }
         }
 
+        const rawHourly = hourlyData?.properties?.periods || [];
+        const validHourly = rawHourly
+          .filter((p: any) => p && typeof p === 'object' && p.startTime);
+
         setWeather({
-          temperature: currentHourly?.temperature ?? currentPeriod.temperature,
-          condition: currentHourly?.shortForecast ?? currentPeriod.shortForecast,
-          unit: currentPeriod.temperatureUnit,
-          forecast: forecastData.properties.periods.slice(0, forecastDays),
-          hourly: hourlyData.properties.periods.slice(0, 24),
-          alerts: alertsData.features || [],
-          location: `${city}, ${state}`,
+          temperature: currentHourly?.temperature ?? currentPeriod?.temperature ?? 0,
+          condition: currentHourly?.shortForecast ?? currentPeriod?.shortForecast ?? 'Clear',
+          unit: currentPeriod?.temperatureUnit || 'F',
+          forecast: forecastPeriods.filter(Boolean).slice(0, forecastDays),
+          hourly: validHourly.slice(0, 24),
+          alerts: alertsData?.features || [],
+          location: `${city || 'Sector'}, ${state || ''}`,
           pressure: pressureInHg ? parseFloat(pressureInHg) : undefined,
           humidity: obsData?.properties?.relativeHumidity?.value,
-          windSpeed: currentPeriod.windSpeed,
-          windDirection: currentPeriod.windDirection,
+          windSpeed: currentPeriod?.windSpeed || '0 mph',
+          windDirection: currentPeriod?.windDirection || '',
           daily: daily,
           lat: latitude,
           lon: longitude
@@ -421,14 +436,14 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
                         <div className="flex items-center gap-3 mt-3">
                            <div className="flex items-center gap-1 text-[10px] font-black text-rose-500">
                              <ArrowUp size={10} />
-                             {weather?.daily[0]?.high}°
+                             {weather?.daily?.[0]?.high ?? '--'}°
                            </div>
                            <div className="flex items-center gap-1 text-[10px] font-black text-sky-500">
                              <ArrowDown size={10} />
-                             {weather?.daily[0]?.low}°
+                             {weather?.daily?.[0]?.low ?? '--'}°
                            </div>
                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] italic opacity-60 ml-2">
-                             {weather?.humidity}% HUM
+                             {weather?.humidity ?? '--'}% HUM
                            </div>
                         </div>
                       </div>
@@ -442,11 +457,11 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
                        <Clock className="w-3 h-3 text-slate-700" />
                     </div>
                     <div className="flex justify-between items-center gap-2">
-                      {weather?.hourly.slice(0, 4).map((hour, idx) => (
+                      {(weather?.hourly || []).filter((h: any) => h && h.startTime).slice(0, 4).map((hour, idx) => (
                         <div key={idx} className="flex flex-col items-center gap-2 flex-1 pt-1 group/item">
-                          <span className="text-[8px] font-black text-slate-600 uppercase group-hover/item:text-slate-400 transition-colors">{format(new Date(hour.startTime), 'HH:mm')}</span>
-                          <AnimatedWeatherIcon condition={hour.shortForecast} size={20} animated={settings?.animatedIcons ?? true} />
-                          <span className="text-xs font-black text-white">{hour.temperature}°</span>
+                          <span className="text-[8px] font-black text-slate-600 uppercase group-hover/item:text-slate-400 transition-colors">{formatHourTime(hour?.startTime)}</span>
+                          <AnimatedWeatherIcon condition={hour?.shortForecast || ''} size={20} animated={settings?.animatedIcons ?? true} />
+                          <span className="text-xs font-black text-white">{hour?.temperature ?? '--'}°</span>
                         </div>
                       ))}
                     </div>
@@ -516,20 +531,20 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
                   ))}
                 </div>
                 <div className="flex-1 flex gap-4 overflow-x-auto pb-4 custom-scrollbar-h">
-                  {weather?.hourly.map((hour, idx) => (
+                  {(weather?.hourly || []).filter((h: any) => h && h.startTime).map((hour, idx) => (
                     <div key={idx} className="flex-shrink-0 w-28 p-6 rounded-3xl bg-white/[0.03] border border-white/5 flex flex-col items-center gap-4 hover:border-indigo-500/30 transition-all">
-                      <span className="text-[10px] font-black text-slate-500 uppercase">{format(new Date(hour.startTime), 'HH:mm')}</span>
-                      <AnimatedWeatherIcon condition={hour.shortForecast} size={28} animated={settings?.animatedIcons ?? true} />
-                      <span className="text-xl font-black text-white">{hour.temperature}°</span>
+                      <span className="text-[10px] font-black text-slate-500 uppercase">{formatHourTime(hour?.startTime)}</span>
+                      <AnimatedWeatherIcon condition={hour?.shortForecast || ''} size={28} animated={settings?.animatedIcons ?? true} />
+                      <span className="text-xl font-black text-white">{hour?.temperature ?? '--'}°</span>
                       <div className="w-full space-y-1.5">
                          <div className="flex justify-between items-center text-[8px] font-black text-slate-600 uppercase tracking-tighter">
                             <span>POP</span>
-                            <span>{hour.probabilityOfPrecipitation?.value || 0}%</span>
+                            <span>{hour?.probabilityOfPrecipitation?.value || 0}%</span>
                          </div>
                          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                            <div 
                             className="h-full bg-blue-500 transition-all duration-1000" 
-                            style={{ width: `${hour.probabilityOfPrecipitation?.value || 0}%` }}
+                            style={{ width: `${hour?.probabilityOfPrecipitation?.value || 0}%` }}
                            />
                          </div>
                       </div>
@@ -564,7 +579,7 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
                   ))}
                 </div>
                 <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 scrollbar-thin">
-                  {weather?.daily.slice(0, forecastDays).map((day, idx) => (
+                  {(weather?.daily || []).filter(Boolean).slice(0, forecastDays).map((day, idx) => (
                     <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all">
                       <div className="flex items-center gap-6 w-1/3">
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest italic w-16">{idx === 0 ? "Today" : day.name}</span>
@@ -682,15 +697,15 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
                 </h3>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar-h">
-                {weather?.hourly.map((hour, idx) => (
+                {(weather?.hourly || []).filter((h: any) => h && h.startTime).map((hour, idx) => (
                   <div key={idx} className="flex-shrink-0 w-24 p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center gap-3 group hover:border-indigo-500/30 transition-all">
-                    <span className="text-[9px] font-black text-slate-500 uppercase">{format(new Date(hour.startTime), 'HH:mm')}</span>
-                    <AnimatedWeatherIcon condition={hour.shortForecast} size={24} animated={settings?.animatedIcons ?? true} />
-                    <span className="text-lg font-black text-white">{hour.temperature}°</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase">{formatHourTime(hour?.startTime)}</span>
+                    <AnimatedWeatherIcon condition={hour?.shortForecast || ''} size={24} animated={settings?.animatedIcons ?? true} />
+                    <span className="text-lg font-black text-white">{hour?.temperature ?? '--'}°</span>
                     <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                        <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${hour.probabilityOfPrecipitation?.value || 0}%` }}
+                        animate={{ width: `${hour?.probabilityOfPrecipitation?.value || 0}%` }}
                         className="h-full bg-blue-500"
                        />
                     </div>
@@ -778,20 +793,20 @@ export function WeatherDashboard({ settings, compact = false }: { settings?: Wea
           )}
 
           {/* TOMORROW MODULE */}
-          {activeModules.showTomorrow && weather && weather.forecast.length > 2 && (
+          {activeModules.showTomorrow && weather && Array.isArray(weather.forecast) && weather.forecast.length > 2 && weather.forecast[2] && (
             <div className="tactical-card p-8 space-y-6 bg-indigo-600/5 border-indigo-500/20">
               <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] flex items-center gap-3 italic">
                 <Shield className="w-4 h-4 text-indigo-400" />
                 Ops Outlook <span className="text-slate-500 not-italic">T+24H</span>
               </h3>
               <div className="flex items-center gap-6">
-                <AnimatedWeatherIcon condition={weather.forecast[2].shortForecast} size={48} animated={settings?.animatedIcons ?? true} />
+                <AnimatedWeatherIcon condition={weather.forecast[2]?.shortForecast || ''} size={48} animated={settings?.animatedIcons ?? true} />
                 <div>
-                   <p className="text-3xl font-black text-white tracking-tight">{weather.forecast[2].temperature}°</p>
+                   <p className="text-3xl font-black text-white tracking-tight">{weather.forecast[2]?.temperature ?? '--'}°</p>
                    <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-1">Projected Peak</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-300 font-bold uppercase leading-relaxed">{weather.forecast[2].detailedForecast}</p>
+              <p className="text-xs text-slate-300 font-bold uppercase leading-relaxed">{weather.forecast[2]?.detailedForecast || ''}</p>
             </div>
           )}
         </div>
