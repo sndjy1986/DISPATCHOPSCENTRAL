@@ -140,6 +140,7 @@ export type PersonnelMember = {
   phone?: string;
   email?: string;
   username?: string;
+  role?: string;
   certifications?: Certification[];
 };
 

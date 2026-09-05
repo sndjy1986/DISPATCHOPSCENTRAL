@@ -3,8 +3,9 @@ import { Sidebar } from './Sidebar';
 import { useTerminal } from '../../context/TerminalContext';
 import { EmergencyBackground } from './EmergencyBackground';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, AlertTriangle, Info, Bell, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, AlertTriangle, Info, Bell, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { auth, signIn } from '../../lib/firebase';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -141,7 +142,7 @@ export function Layout({ children }: LayoutProps) {
                       onClick={() => removeNotification(note.id)}
                       className="p-1 hover:bg-white/5 rounded-lg text-text-dim hover:text-text-main transition-all"
                     >
-                      <CloseIcon className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </motion.div>
