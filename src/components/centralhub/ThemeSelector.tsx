@@ -73,14 +73,14 @@ export function ThemeSelectorButton({ variant = 'header', className = '' }: Them
         type="button"
         onClick={() => setIsOpen(true)}
         className={`px-4 py-2.5 glass-effect border-indigo-500/30 text-indigo-400 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2.5 transition-all hover:bg-indigo-500/20 shadow-lg shadow-indigo-950/40 cursor-pointer ${className}`}
-        title="Change App Theme Matrix"
+        title="Themes & Typography Matrix"
       >
         <span
           className="w-3 h-3 rounded-full border border-white/40 shrink-0 shadow-sm"
           style={{ backgroundColor: currentTheme.accent }}
         />
         <Palette className="w-4 h-4 text-indigo-400" />
-        <span>Theme: <strong className="text-white not-italic">{currentTheme.name}</strong></span>
+        <span>Themes & Fonts: <strong className="text-white not-italic">{currentTheme.name}</strong></span>
       </button>
 
       <ThemeSelectorModal isOpen={isOpen} onClose={() => setIsOpen(false)} />

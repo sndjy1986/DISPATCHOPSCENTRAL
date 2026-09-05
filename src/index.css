@@ -100,6 +100,111 @@
   --text-dim: #94a3b8;
 }
 
+[data-theme='abyss'] {
+  /* Abyss / OLED Pitch Black */
+  --brand-blue: #06b6d4;
+  --brand-indigo: #3b82f6;
+  --brand-indigo-dark: #1d4ed8;
+  --brand-indigo-darker: #1e3a8a;
+  --brand-emerald: #10b981;
+  --brand-panel: #0a0a0f;
+  --brand-border: #1e2230;
+  --brand-bg: #020204;
+  --brand-field: #0a0d14;
+  --brand-accent: #00f0ff;
+  --brand-accent-medium: #38bdf8;
+  --brand-accent-light: #7dd3fc;
+  --brand-accent-soft: #e0f2fe;
+  --bg-main: #020204;
+  --bg-surface: #0a0a0f;
+  --text-main: #ffffff;
+  --text-dim: #94a3b8;
+}
+
+[data-theme='stealth'] {
+  /* Stealth / Carbon Tactical Gunmetal */
+  --brand-blue: #10b981;
+  --brand-indigo: #059669;
+  --brand-indigo-dark: #047857;
+  --brand-indigo-darker: #064e3b;
+  --brand-emerald: #10b981;
+  --brand-panel: #111827;
+  --brand-border: #1f2937;
+  --brand-bg: #0b0f17;
+  --brand-field: #161f30;
+  --brand-accent: #34d399;
+  --brand-accent-medium: #10b981;
+  --brand-accent-light: #6ee7b7;
+  --brand-accent-soft: #d1fae5;
+  --bg-main: #0b0f17;
+  --bg-surface: #111827;
+  --text-main: #f9fafb;
+  --text-dim: #9ca3af;
+}
+
+[data-theme='cyber'] {
+  /* Cyber / Void Neon */
+  --brand-blue: #8b5cf6;
+  --brand-indigo: #a855f7;
+  --brand-indigo-dark: #7e22ce;
+  --brand-indigo-darker: #581c87;
+  --brand-emerald: #06b6d4;
+  --brand-panel: #13111f;
+  --brand-border: #27223c;
+  --brand-bg: #090810;
+  --brand-field: #1b182e;
+  --brand-accent: #f43f5e;
+  --brand-accent-medium: #fb7185;
+  --brand-accent-light: #fda4af;
+  --brand-accent-soft: #ffe4e6;
+  --bg-main: #090810;
+  --bg-surface: #13111f;
+  --text-main: #ffffff;
+  --text-dim: #a78bfa;
+}
+
+[data-theme='slate-dark'] {
+  /* Slate Dark / Deep Navy Night */
+  --brand-blue: #38bdf8;
+  --brand-indigo: #6366f1;
+  --brand-indigo-dark: #4f46e5;
+  --brand-indigo-darker: #3730a3;
+  --brand-emerald: #10b981;
+  --brand-panel: #141b2b;
+  --brand-border: #222e47;
+  --brand-bg: #0c111d;
+  --brand-field: #1a2338;
+  --brand-accent: #60a5fa;
+  --brand-accent-medium: #3b82f6;
+  --brand-accent-light: #93c5fd;
+  --brand-accent-soft: #dbeafe;
+  --bg-main: #0c111d;
+  --bg-surface: #141b2b;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+}
+
+[data-theme='matrix'] {
+  /* Matrix / Digital Terminal Phosphor */
+  --brand-blue: #22c55e;
+  --brand-indigo: #16a34a;
+  --brand-indigo-dark: #15803d;
+  --brand-indigo-darker: #166534;
+  --brand-emerald: #22c55e;
+  --brand-panel: #06150a;
+  --brand-border: #0d2e16;
+  --brand-bg: #020904;
+  --brand-field: #0a1f10;
+  --brand-accent: #4ade80;
+  --brand-accent-medium: #22c55e;
+  --brand-accent-light: #86efac;
+  --brand-accent-soft: #dcfce7;
+  --bg-main: #020904;
+  --bg-surface: #06150a;
+  --text-main: #ecfdf5;
+  --text-dim: #6ee7b7;
+}
+
 [data-theme='ivory'] {
   /* Ivory / Elegant Off-White */
   --brand-blue: #78350f;
@@ -339,7 +444,20 @@
   }
 
   .tactical-input {
-    @apply bg-black/40 border-white/10 text-white font-mono focus:border-indigo-500/50 focus:ring-0 rounded-xl transition-all placeholder:text-slate-600;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.25) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border-radius: 0.875rem;
+    transition: all 0.25s ease;
+  }
+  .tactical-input:focus {
+    border-color: rgba(99, 102, 241, 0.65);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.35), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    outline: none;
   }
 
   .tactical-btn-indigo {
@@ -347,8 +465,25 @@
   }
 
   .tactical-card {
-    background-color: color-mix(in srgb, var(--bg-surface) calc(var(--panel-opacity, 0.5) * 100%), transparent);
-    @apply backdrop-blur-md border border-white/5 rounded-[2rem] hover:border-white/10 transition-all duration-300;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.005) 100%), color-mix(in srgb, var(--bg-surface) 35%, transparent);
+    backdrop-filter: blur(28px) saturate(180%) contrast(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%) contrast(105%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 
+      0 16px 40px 0 rgba(0, 0, 0, 0.45), 
+      inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+    border-radius: 2rem;
+    position: relative;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tactical-card:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: 
+      0 20px 52px 0 rgba(0, 0, 0, 0.55), 
+      inset 0 1px 2.5px 0 rgba(255, 255, 255, 0.38),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.3);
   }
 
   .custom-scrollbar::-webkit-scrollbar {

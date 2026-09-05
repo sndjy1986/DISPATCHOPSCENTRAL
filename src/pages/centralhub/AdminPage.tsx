@@ -106,8 +106,13 @@ export function AdminPage() {
   };
 
   const THEMES: { id: AppTheme; name: string; color: string }[] = [
-    { id: 'paper', name: 'Paper', color: '#e2e8f0' },
+    { id: 'abyss', name: 'OLED Abyss', color: '#030305' },
+    { id: 'stealth', name: 'Stealth Carbon', color: '#0b0f17' },
     { id: 'midnight', name: 'Midnight', color: '#1a1d23' },
+    { id: 'slate-dark', name: 'Slate Night', color: '#0c111d' },
+    { id: 'cyber', name: 'Cyber Void', color: '#090810' },
+    { id: 'matrix', name: 'Matrix Obsidian', color: '#020904' },
+    { id: 'paper', name: 'Paper', color: '#e2e8f0' },
     { id: 'cream', name: 'Cream', color: '#eee8d5' },
     { id: 'mint', name: 'Mint', color: '#dcfce7' },
     { id: 'clay', name: 'Clay', color: '#ddd6fe' },

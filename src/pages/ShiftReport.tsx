@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { useTerminal } from '../context/TerminalContext';
 import { 
   Clipboard, 
@@ -21,10 +20,6 @@ import {
   X,
   FileText,
   Phone,
-  Settings,
-  History,
-  Eye,
-  Loader2,
   Radio,
   Shield,
   Users,
@@ -35,33 +30,16 @@ import {
   UserCheck,
   Lock,
   AlertCircle,
-  Plus,
   ArrowRight,
   EyeOff,
-  HardDrive,
-  Palette,
-  Type,
-  Sliders,
-  RotateCcw,
-  Check,
-  ZoomIn,
-  ZoomOut,
-  Sparkles
+  Eye
 } from 'lucide-react';
-import { BackupControlModal } from '../components/BackupControlModal';
 import { ThemeSelectorButton } from '../components/centralhub/ThemeSelector';
-
-// Sub-component for the high-intensity emergency background
-const EmergencyBackground = ({ isActive, opacity = 0.25 }: { isActive: boolean; opacity?: number }) => {
-  return null;
-};
-
 import { 
   TEAM_MEMBERS, 
   SHIFT_TEAMS,
   ALSSUP_OPTIONS, 
-  DEFAULT_ZULU_OPTIONS,
-  MEDSUP_OPTIONS, 
+  DEFAULT_ZULU_OPTIONS, 
   MEDSUP_MAP, 
   BASE_REPORT_EMAILS, 
   CC_EMAIL, 
@@ -70,64 +48,18 @@ import {
   ShiftReportData 
 } from '../lib/shiftConstants';
 import { 
-  saveReport, 
-  getReports, 
-  ShiftReport as ShiftReportType, 
-  auth, 
-  signIn, 
-  googleProvider, 
   doc, 
   onSnapshot, 
   db, 
-  updateGlobalSettings,
-  PersonnelMember,
-  query,
-  orderBy,
-  collection,
-  updateDoc,
-  serverTimestamp
+  PersonnelMember 
 } from '../lib/firebase';
-import ShiftTurnover from './ShiftTurnover';
+import { 
+  LabelStyleConfig, 
+  DEFAULT_LABEL_STYLE, 
+  getSavedLabelStyle 
+} from '../lib/labelStyle';
 
 const STORAGE_KEY = "shiftReportDraft_v2";
-const LABEL_STYLE_STORAGE_KEY = "shift_report_label_style_v2";
-
-export interface LabelStyleConfig {
-  color: string;
-  fontSize: number; // in pixels (e.g. 8 - 24)
-  fontWeight: 'font-medium' | 'font-semibold' | 'font-bold' | 'font-black';
-  letterSpacing: string;
-  textTransform: 'uppercase' | 'normal-case';
-}
-
-const DEFAULT_LABEL_STYLE: LabelStyleConfig = {
-  color: '#94a3b8',
-  fontSize: 11,
-  fontWeight: 'font-black',
-  letterSpacing: 'tracking-[0.25em]',
-  textTransform: 'uppercase',
-};
-
-const COLOR_PRESETS = [
-  { name: 'Slate Neutral', hex: '#94a3b8', description: 'Standard tactical gray' },
-  { name: 'Pure White', hex: '#ffffff', description: 'Maximum contrast' },
-  { name: 'Neon Cyan', hex: '#22d3ee', description: 'Digital cyan display' },
-  { name: 'Emerald', hex: '#34d399', description: 'Crisp green readout' },
-  { name: 'Amber Gold', hex: '#fbbf24', description: 'High-visibility alert' },
-  { name: 'Command Indigo', hex: '#818cf8', description: 'Tactical purple-blue' },
-  { name: 'Coral Rose', hex: '#fb7185', description: 'Vivid contrast tone' },
-  { name: 'Electric Violet', hex: '#c084fc', description: 'Clear violet hue' },
-  { name: 'Lime Spark', hex: '#a3e635', description: 'Laser bright lime' },
-  { name: 'Safety Orange', hex: '#fb923c', description: 'High alert orange' },
-];
-
-const SIZE_PRESETS = [
-  { label: 'Compact', size: 9 },
-  { label: 'Standard', size: 11 },
-  { label: 'Medium', size: 13 },
-  { label: 'Large', size: 15 },
-  { label: 'Extra Large', size: 18 },
-];
 
 const LabelStyleContext = React.createContext<LabelStyleConfig>(DEFAULT_LABEL_STYLE);
 
@@ -152,40 +84,24 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
   const [showToast, setShowToast] = useState<string | null>(null);
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [showPreviewDrawer, setShowPreviewDrawer] = useState(false);
-  const [showDirectoryDrawer, setShowDirectoryDrawer] = useState(false);
-  const [showAdminDrawer, setShowAdminDrawer] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showLabelModal, setShowLabelModal] = useState(false);
   
-  // Custom Box Prompt Label Color & Size Configuration
-  const [labelStyle, setLabelStyle] = useState<LabelStyleConfig>(() => {
-    try {
-      const saved = localStorage.getItem(LABEL_STYLE_STORAGE_KEY);
-      if (saved) {
-        return { ...DEFAULT_LABEL_STYLE, ...JSON.parse(saved) };
+  // Custom Box Prompt Label Color & Size Configuration synced with ThemeSelectorModal
+  const [labelStyle, setLabelStyle] = useState<LabelStyleConfig>(getSavedLabelStyle);
+
+  useEffect(() => {
+    const handleStyleUpdate = (e: any) => {
+      if (e?.detail) {
+        setLabelStyle(e.detail);
+      } else {
+        setLabelStyle(getSavedLabelStyle());
       }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_LABEL_STYLE;
-  });
-
-  const updateLabelStyle = useCallback((partial: Partial<LabelStyleConfig>) => {
-    setLabelStyle(prev => {
-      const updated = { ...prev, ...partial };
-      try {
-        localStorage.setItem(LABEL_STYLE_STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-  }, []);
-
-  const resetLabelStyle = useCallback(() => {
-    setLabelStyle(DEFAULT_LABEL_STYLE);
-    try {
-      localStorage.removeItem(LABEL_STYLE_STORAGE_KEY);
-    } catch (e) {}
-    setShowToast("Label text styling reset to default");
+    };
+    window.addEventListener('shift_report_label_style_changed', handleStyleUpdate);
+    window.addEventListener('storage', handleStyleUpdate);
+    return () => {
+      window.removeEventListener('shift_report_label_style_changed', handleStyleUpdate);
+      window.removeEventListener('storage', handleStyleUpdate);
+    };
   }, []);
   
   const handlePasteReport = () => setShowPasteModal(true);
@@ -194,21 +110,12 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
   const location = useLocation();
   const isStandalone = location.pathname === '/single-shift-report' || location.pathname === '/shift-report/standalone' || new URLSearchParams(location.search).get('standalone') === 'true';
 
-  // New States for History and Lights
   const { terminalUser } = useTerminal();
-  const [user, setUser] = useState(auth.currentUser);
-  const [backgroundStyle, setBackgroundStyle] = useState<'glow' | 'emergency'>('glow');
-  const [lightIntensity, setLightIntensity] = useState<number>(0.5);
   const [personnel, setPersonnel] = useState<PersonnelMember[]>([]);
   const [zuluList, setZuluList] = useState<string[]>(DEFAULT_ZULU_OPTIONS);
   
-  // Emergency States
-  const manualEmergencyMode = backgroundStyle === 'emergency';
-  const emergencyOpacity = lightIntensity;
-
-  // Sync with Firestore Global Settings
+  // Sync with Firestore Global Settings (Personnel, Zulu, Supervisors)
   useEffect(() => {
-    // 1. Try local cache first for instant render
     try {
       const cached = localStorage.getItem('cached_global_settings');
       if (cached) {
@@ -218,24 +125,21 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
       }
     } catch (e) {}
 
-    // 2. Subscribe to live Firestore updates
     const settingsRef = doc(db, 'settings', 'global');
     const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        if (data.backgroundStyle) setBackgroundStyle(data.backgroundStyle);
-        if (typeof data.lightIntensity === 'number') setLightIntensity(data.lightIntensity);
-        if (data.personnel) setPersonnel(data.personnel);
-        if (data.supervisors) setSupervisors(data.supervisors);
-        if (data.alssupOptions) setAlssupList(data.alssupOptions);
-        if (data.zuluOptions) setZuluList(data.zuluOptions);
+        const d = snapshot.data();
+        if (d.personnel) setPersonnel(d.personnel);
+        if (d.supervisors) setSupervisors(d.supervisors);
+        if (d.alssupOptions) setAlssupList(d.alssupOptions);
+        if (d.zuluOptions) setZuluList(d.zuluOptions);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Compute shift teams from personnel with robust static fallbacks if Firestore/Uplink is offline
+  // Compute shift teams from personnel with robust static fallbacks
   const shiftTeams = useMemo(() => {
     const teams: Record<string, { lead: string; members: string[] }> = {
       'A': { lead: '', members: [] },
@@ -246,7 +150,6 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
     };
 
     if (personnel && personnel.length > 0) {
-      // First pass: identify leads based on SHIFT_TEAMS to ensure they get assigned properly
       personnel.forEach(p => {
         let targetKey: string = p.shift;
         if (targetKey === 'Alpha' || targetKey === 'A-Shift' || targetKey === 'A') targetKey = 'A';
@@ -258,94 +161,29 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
         const expectedLead = targetKey === 'A' ? SHIFT_TEAMS['Alpha']?.lead :
                              targetKey === 'B' ? SHIFT_TEAMS['Bravo']?.lead :
                              targetKey === 'C' ? SHIFT_TEAMS['Charlie']?.lead :
-                             targetKey === 'D' ? SHIFT_TEAMS['Delta']?.lead : null;
+                             targetKey === 'D' ? SHIFT_TEAMS['Delta']?.lead : '';
 
-        if (teams[targetKey]) {
-          if (p.name === expectedLead) {
-            teams[targetKey].lead = p.name;
-          }
+        const isLead = p.role?.toLowerCase().includes('lead') || 
+                       p.role?.toLowerCase().includes('supervisor') ||
+                       p.name === expectedLead;
+
+        if (isLead && !teams[targetKey].lead) {
+          teams[targetKey].lead = p.name;
+        } else {
+          teams[targetKey].members.push(p.name);
         }
       });
-
-      // Second pass: fill in members and fallback leads if missing
-      personnel.forEach(p => {
-        let targetKey: string = p.shift;
-        if (targetKey === 'Alpha' || targetKey === 'A-Shift' || targetKey === 'A') targetKey = 'A';
-        else if (targetKey === 'Bravo' || targetKey === 'B-Shift' || targetKey === 'B') targetKey = 'B';
-        else if (targetKey === 'Charlie' || targetKey === 'C-Shift' || targetKey === 'C') targetKey = 'C';
-        else if (targetKey === 'Delta' || targetKey === 'D-Shift' || targetKey === 'D') targetKey = 'D';
-        else targetKey = 'Other';
-
-        const expectedLead = targetKey === 'A' ? SHIFT_TEAMS['Alpha']?.lead :
-                             targetKey === 'B' ? SHIFT_TEAMS['Bravo']?.lead :
-                             targetKey === 'C' ? SHIFT_TEAMS['Charlie']?.lead :
-                             targetKey === 'D' ? SHIFT_TEAMS['Delta']?.lead : null;
-
-        if (teams[targetKey]) {
-          if (p.name !== expectedLead) {
-            if (!teams[targetKey].lead) {
-              teams[targetKey].lead = p.name;
-            } else {
-              teams[targetKey].members.push(p.name);
-            }
-          }
-        }
-      });
-    }
-
-    // If teams are still empty (e.g. offline or blocked), populate them with high-fidelity static fallbacks from shiftConstants to prevent empty selects
-    const isTeamsEmpty = !teams['A'].lead && !teams['B'].lead && !teams['C'].lead && !teams['D'].lead;
-    if (isTeamsEmpty) {
-      if (SHIFT_TEAMS) {
-        if (SHIFT_TEAMS['Alpha']) {
-          teams['A'] = { lead: SHIFT_TEAMS['Alpha'].lead, members: SHIFT_TEAMS['Alpha'].members };
-        }
-        if (SHIFT_TEAMS['Bravo']) {
-          teams['B'] = { lead: SHIFT_TEAMS['Bravo'].lead, members: SHIFT_TEAMS['Bravo'].members };
-        }
-        if (SHIFT_TEAMS['Charlie']) {
-          teams['C'] = { lead: SHIFT_TEAMS['Charlie'].lead, members: SHIFT_TEAMS['Charlie'].members };
-        }
-        if (SHIFT_TEAMS['Delta']) {
-          teams['D'] = { lead: SHIFT_TEAMS['Delta'].lead, members: SHIFT_TEAMS['Delta'].members };
-        }
-      }
+    } else {
+      if (SHIFT_TEAMS['Alpha']) teams['A'] = { lead: SHIFT_TEAMS['Alpha'].lead, members: SHIFT_TEAMS['Alpha'].members };
+      if (SHIFT_TEAMS['Bravo']) teams['B'] = { lead: SHIFT_TEAMS['Bravo'].lead, members: SHIFT_TEAMS['Bravo'].members };
+      if (SHIFT_TEAMS['Charlie']) teams['C'] = { lead: SHIFT_TEAMS['Charlie'].lead, members: SHIFT_TEAMS['Charlie'].members };
+      if (SHIFT_TEAMS['Delta']) teams['D'] = { lead: SHIFT_TEAMS['Delta'].lead, members: SHIFT_TEAMS['Delta'].members };
     }
 
     return teams;
   }, [personnel]);
 
-  // Track auth state
-  useEffect(() => {
-    return auth.onAuthStateChanged((u) => setUser(u));
-  }, []);
-  const [archivedReports, setArchivedReports] = useState<ShiftReportType[]>([]);
-  const [loadingReports, setLoadingReports] = useState(false);
-  const [selectedArchivedReport, setSelectedArchivedReport] = useState<ShiftReportType | null>(null);
-  const [showBackupModal, setShowBackupModal] = useState(false);
-
-  // Load history when drawer opens
-  useEffect(() => {
-    if (showAdminDrawer || showHistory) {
-      loadHistory();
-    }
-  }, [showAdminDrawer, showHistory]);
-
-  const loadHistory = useCallback(async () => {
-    setLoadingReports(true);
-    try {
-      const reports = await getReports();
-      if (reports) setArchivedReports(reports);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingReports(false);
-    }
-  }, []);
-
   // Dynamic Data State
-  const [employees, setEmployees] = useState<string[]>(TEAM_MEMBERS);
-  
   const [supervisors, setSupervisors] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem("shiftReport_supervisors");
     return saved ? JSON.parse(saved) : MEDSUP_MAP;
@@ -364,7 +202,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
     localStorage.setItem("shiftReport_alssup", JSON.stringify(alssupList));
   }, [alssupList]);
 
-  // Auto-save logic
+  // Auto-save logic to local buffer
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
@@ -379,23 +217,35 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setData(prev => ({ ...prev, [name]: value }));
+    setData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'name' && value) {
+        for (const [shiftKey, team] of Object.entries(shiftTeams)) {
+          if (team.lead === value || team.members.includes(value)) {
+            updated.shift = shiftKey as any;
+            break;
+          }
+        }
+      }
+      return updated;
+    });
   };
 
   const handleTextareaTab = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      
       const target = e.target as HTMLTextAreaElement;
       const start = target.selectionStart;
       const end = target.selectionEnd;
+      const value = target.value;
       
-      const newValue = target.value.substring(0, start) + "    " + target.value.substring(end);
+      const nextValue = value.substring(0, start) + "    " + value.substring(end);
+      const name = target.name;
       
       const event = {
         target: {
-          name: target.name,
-          value: newValue,
+          name,
+          value: nextValue
         }
       } as React.ChangeEvent<HTMLTextAreaElement>;
       
@@ -407,30 +257,11 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
     }
   };
 
-  const clearData = async () => {
-    if (window.confirm("Are you sure you want to clear all form data? (This will also archive a backup to the cloud)")) {
-      // Save to Firebase History (Only if logged in) before clearing
-      if (user) {
-        try {
-          const plainReport = buildReport();
-          const htmlReport = buildHtmlReport();
-          await saveReport({
-            name: data.name,
-            date: data.date,
-            shift: data.shift,
-            data: data,
-            htmlReport: htmlReport,
-            plainReport: plainReport
-          });
-          console.log("Report archived to Firebase during reset");
-        } catch (e) {
-          console.error("Failed to archive report during reset:", e);
-        }
-      }
-
+  const clearData = () => {
+    if (window.confirm("Are you sure you want to clear all form data?")) {
       setData(INITIAL_DATA);
       localStorage.removeItem(STORAGE_KEY);
-      setShowToast("Form cleared & Backed up");
+      setShowToast("Form buffer cleared");
     }
   };
 
@@ -487,7 +318,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
       `Shift: ${data.shift}`
     ]);
 
-    addSection("Radio Assignment", [
+    addSection("Radio Assignments", [
       `Ch.1: ${data.channel1 || "N/A"}`,
       `Ch.2: ${data.channel2 || "N/A"}`,
       `Third Person: ${data.thirdPerson || "N/A"}`
@@ -528,18 +359,15 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
   const buildHtmlReport = () => {
     const parts: string[] = [];
     const dataStyle = 'font-family: Calibri, sans-serif; font-size: 16pt; margin: 0; line-height: 1.4; color: #000;';
+    // +4 font size over 16pt body = 20pt, bold, and underlined
+    const headerStyle = 'font-family: Calibri, sans-serif; font-size: 20pt; font-weight: bold; text-decoration: underline; margin-top: 8px; margin-bottom: 4px; color: #000;';
 
     const addHtmlSection = (title: string, content: string | string[], isTabular: boolean = false) => {
       if (parts.length > 0) {
         parts.push('<div style="height: 18pt;">&nbsp;</div>');
       }
-      
-      const isLateTrucks = title === "Late Trucks";
-      const customHeaderStyle = isLateTrucks 
-        ? 'font-family: Calibri, sans-serif; font-size: 20pt; font-weight: bold; text-decoration: underline; margin-top: 6px; margin-bottom: 4px; color: #000;'
-        : 'font-family: Calibri, sans-serif; font-size: 18pt; font-weight: bold; text-decoration: underline; margin-top: 6px; margin-bottom: 4px; color: #000;';
 
-      parts.push(`<div style="${customHeaderStyle}"><u style="text-decoration: underline;"><strong>**${title}**</strong></u></div>`);
+      parts.push(`<div style="${headerStyle}"><u style="text-decoration: underline;"><strong><span style="font-size: 20pt;">**${title}**</span></strong></u></div>`);
       
       if (Array.isArray(content)) {
         content.forEach(line => {
@@ -597,7 +425,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
       `Shift: ${data.shift}`
     ]);
 
-    addHtmlSection("Radio Assignment", [
+    addHtmlSection("Radio Assignments", [
       `Ch.1: ${data.channel1 || "N/A"}`,
       `Ch.2: ${data.channel2 || "N/A"}`,
       `Third Person: ${data.thirdPerson || "N/A"}`
@@ -638,21 +466,6 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
   const handleSend = async () => {
     const plainReport = buildReport();
     const htmlReport = buildHtmlReport();
-    
-    // Save report to Cloud Archive automatically on deploy
-    try {
-      await saveReport({
-        name: data.name || "N/A",
-        date: data.date || format(new Date(), 'yyyy-MM-dd'),
-        shift: data.shift || "A",
-        data: data,
-        htmlReport: htmlReport,
-        plainReport: plainReport
-      });
-      loadHistory();
-    } catch (e) {
-      console.error("Auto-archive error on deploy:", e);
-    }
 
     try {
       if (navigator.clipboard && window.ClipboardItem) {
@@ -667,14 +480,14 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
         })];
         
         await navigator.clipboard.write(clipboardItems);
-        setShowToast("Report Saved to Archive & Copied! Launching Email...");
+        setShowToast("Report Copied to Clipboard! Launching Email...");
       } else {
         await navigator.clipboard.writeText(plainReport);
-        setShowToast("Report Saved to Archive & Copied! Launching Email...");
+        setShowToast("Report Copied to Clipboard! Launching Email...");
       }
     } catch (err) {
       console.error("Clipboard error:", err);
-      setShowToast("Report Saved! Opening email...");
+      setShowToast("Launching email...");
     }
 
     const reportSubjectType = data.reportType || "Mid-Shift Report";
@@ -694,140 +507,100 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
 
   useEffect(() => {
     if (showToast) {
-      const timer = setTimeout(() => setShowToast(null), 5000);
+      const timer = setTimeout(() => setShowToast(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [showToast]);
 
   return (
     <div className="relative selection:bg-indigo-500/30">
-      <EmergencyBackground isActive={manualEmergencyMode} opacity={emergencyOpacity} />
-      
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 transition-opacity duration-1000">
         <div className="absolute top-[10%] left-[10%] w-[50%] h-[50%] bg-indigo-500/5 blur-[120px] rounded-full animate-pulse-slow" />
         <div className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] bg-blue-500/5 blur-[120px] rounded-full animate-pulse-slow delay-700" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto pb-24 px-6 pt-12">
-        {/* Main Form */}
+      <div className="relative z-10">
         <LabelStyleContext.Provider value={labelStyle}>
-          <main className="flex flex-col gap-10">
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-10 pb-10 border-b border-indigo-500/10 relative tactical-header-glow font-sans">
-              <div className="space-y-4">
-                <div className="flex items-center gap-6 group">
-                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-[0_0_35px_rgba(79,70,229,0.3)] transition-transform group-hover:scale-105 duration-500 relative overflow-hidden">
+          <main className="max-w-[1700px] mx-auto p-4 sm:p-8 lg:p-12 space-y-10">
+            {/* Header Module */}
+            <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 border-b border-white/10">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-600/30 border border-indigo-400/30 relative overflow-hidden shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
                     <Clipboard className="w-7 h-7 text-white relative z-10" />
                   </div>
                   <div className="space-y-1">
-                    <h1 className="text-5xl font-black tracking-tight text-white uppercase italic leading-tight">
+                    <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white uppercase italic leading-tight">
                       Shift <span className="text-indigo-500 not-italic">Report</span>
                     </h1>
-                    <p className="text-slate-500 text-[10px] uppercase tracking-[0.4em] font-black flex items-center gap-3">
-                      <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
-                      Shift Report Log & Personnel Management
+                    <p className="text-slate-400 text-[10px] uppercase tracking-[0.35em] font-black flex items-center gap-2.5">
+                      <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                      Operational Roster & Tactical Shift Matrix
                     </p>
                   </div>
                 </div>
               </div>
               
               <div className="flex flex-wrap items-center gap-3">
-                 {/* Quick Prompt Label Text Size & Color Controls */}
-                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-2xl shadow-inner">
-                   <button
-                     type="button"
-                     onClick={() => updateLabelStyle({ fontSize: Math.max(8, labelStyle.fontSize - 1) })}
-                     className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                     title="Decrease Box Prompt Text Size (A-)"
-                   >
-                     <ZoomOut className="w-3.5 h-3.5" />
-                   </button>
-                   
-                   <button
-                     type="button"
-                     onClick={() => setShowLabelModal(true)}
-                     className="flex items-center gap-2 px-2.5 py-1 hover:bg-white/10 rounded-xl transition-all group cursor-pointer"
-                     title="Customize Box Prompt Text Color & Size"
-                   >
-                     <span 
-                       className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-sm shrink-0 transition-transform group-hover:scale-110" 
-                       style={{ backgroundColor: labelStyle.color }} 
-                     />
-                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-300 group-hover:text-white">
-                       {labelStyle.fontSize}px
-                     </span>
-                     <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                   </button>
-
-                   <button
-                     type="button"
-                     onClick={() => updateLabelStyle({ fontSize: Math.min(24, labelStyle.fontSize + 1) })}
-                     className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                     title="Increase Box Prompt Text Size (A+)"
-                   >
-                     <ZoomIn className="w-3.5 h-3.5" />
-                   </button>
-                 </div>
-
-                 <div className="flex items-center gap-6 px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl shadow-inner">
+                 <div className="flex items-center gap-4 px-4 py-2 bg-black/40 border border-white/10 rounded-2xl shadow-inner">
                    <div className="flex flex-col items-center">
-                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Active Report</span>
+                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Roster</span>
                      <span className="text-xs font-black text-indigo-400 uppercase italic">SHIFT-{data.shift}</span>
                    </div>
                    <div className="w-px h-5 bg-white/10" />
                    <div className="flex flex-col items-center">
-                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Sync State</span>
-                     <span className="text-[10px] font-mono font-bold text-emerald-500 animate-pulse">ENCRYPTED</span>
+                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Buffer State</span>
+                     <span className="text-[10px] font-mono font-bold text-emerald-400 animate-pulse">ACTIVE</span>
                    </div>
                  </div>
                  
+                 {/* Themes & Typography Button */}
                  <ThemeSelectorButton />
 
                  <button
+                   type="button"
                    onClick={handlePasteReport}
-                   className="tactical-btn-indigo px-6 py-2.5 text-[10px] shadow-indigo-600/20"
+                   className="tactical-btn-indigo px-5 py-2.5 text-[10px] shadow-indigo-600/20 cursor-pointer"
+                   title="Process Raw Roster Grid Data"
                  >
-                   <Maximize2 className="w-4 h-4" />
+                   <Maximize2 className="w-3.5 h-3.5" />
                    Vector Stream
                  </button>
-                 <button
-                   onClick={() => setShowHistory(true)}
-                   className="px-5 py-2.5 glass-effect text-slate-400 border-white/5 hover:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2.5 transition-all hover:bg-white/5"
-                 >
-                   <History className="w-4 h-4" />
-                   Archive
-                 </button>
-                  {!isStandalone && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
-                        window.open(standaloneUrl, 'ShiftReportStandalone', 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
-                      }}
-                      className="px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-md cursor-pointer"
-                      title="Open Standalone Shift Report in Independent Window"
-                    >
-                      <ExternalLink className="w-4 h-4 text-emerald-400" />
-                      Standalone View
-                    </button>
-                  )}
 
                  <button
-                   onClick={() => setShowBackupModal(true)}
-                   className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm"
+                   type="button"
+                   onClick={() => setShowPreviewDrawer(true)}
+                   className="px-4 py-2.5 bg-black/40 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-md cursor-pointer"
+                   title="View Rich Text Report Preview"
                  >
-                   <HardDrive className="w-4 h-4 text-indigo-400" />
-                   Backup (.json)
+                   <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                   Preview
                  </button>
+
+                 {!isStandalone && (
+                   <button
+                     type="button"
+                     onClick={() => {
+                       const standaloneUrl = window.location.href.split('#')[0] + '#/single-shift-report';
+                       window.open(standaloneUrl, 'ShiftReportStandalone', 'width=1450,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+                     }}
+                     className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-md cursor-pointer"
+                     title="Open Standalone Shift Report in Independent Window"
+                   >
+                     <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                     Standalone View
+                   </button>
+                 )}
               </div>
             </header>
 
-            <div className="flex flex-col gap-10">
+            <div className="flex flex-col gap-8 sm:gap-10">
               {/* Row 1: Info, Radio, Supervisors */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="tactical-card p-8 space-y-8 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                <div className="tactical-card p-6 sm:p-8 space-y-6 sm:space-y-8 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
@@ -835,8 +608,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                         <User className="w-3.5 h-3.5" /> Shift Information
                      </h2>
                   </div>
-                  <div className="space-y-6">
-
+                  <div className="space-y-5">
                     <Field label="Name" icon={UserCheck}>
                       <select name="name" value={data.name} onChange={handleChange}>
                         <option value="">-- SELECT --</option>
@@ -861,8 +633,8 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                   </div>
                 </div>
 
-                <div className="tactical-card p-8 space-y-8 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="tactical-card p-6 sm:p-8 space-y-6 sm:space-y-8 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
@@ -870,7 +642,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                         <Zap className="w-3.5 h-3.5" /> Radio Assignments
                      </h2>
                   </div>
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     <Field label="Radio Ch. 1" icon={Radio}>
                       <select name="channel1" value={data.channel1} onChange={handleChange}>
                         <option value="">-- SELECT --</option>
@@ -913,8 +685,8 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                   </div>
                 </div>
 
-                <div className="tactical-card p-8 space-y-8 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="tactical-card p-6 sm:p-8 space-y-6 sm:space-y-8 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
@@ -922,7 +694,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                         <Lock className="w-3.5 h-3.5" /> Supervisors
                      </h2>
                   </div>
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     <Field label="ALSSUP" icon={Activity}>
                       <select name="alssup" value={data.alssup} onChange={handleChange}>
                         <option value="">-- SELECT --</option>
@@ -939,18 +711,18 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                 </div>
               </div>
 
-              {/* Row 2: Available Trucks */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="tactical-card p-8 space-y-8 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              {/* Row 2: Zulu On Call & Available Trucks */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <div className="tactical-card p-6 sm:p-8 space-y-6 sm:space-y-8 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
                      >
-                        <Truck className="w-3.5 h-3.5" /> Available Trucks
+                        <Truck className="w-3.5 h-3.5" /> Available Trucks & Zulu On Call
                      </h2>
                   </div>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Field label="911 Trucks" icon={Activity}>
                       <input type="number" name="truck911" value={data.truck911} onChange={handleChange} min="0" />
                     </Field>
@@ -984,16 +756,16 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                   </div>
                 </div>
 
-                <div className="tactical-card p-8 space-y-8 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="tactical-card p-6 sm:p-8 space-y-6 sm:space-y-8 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
                      >
-                        <Clock className="w-3.5 h-3.5" /> Late Trucks / Chute Deviations
+                        <Clock className="w-3.5 h-3.5" /> Late Trucks & Chute Deviations
                      </h2>
                   </div>
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     <div className="flex flex-col gap-2.5 group/field">
                       <div className="flex items-center gap-2 pl-3">
                         <AlertCircle style={{ color: labelStyle.color }} className="w-3.5 h-3.5 opacity-80 shrink-0" />
@@ -1037,28 +809,28 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                         onKeyDown={handleTextareaTab}
                         rows={3} 
                         className="w-full tactical-input p-4 text-xs font-mono text-white"
-                        placeholder="ANOMALIES..." 
+                        placeholder="CHUTE ANOMALIES & EXPLANATIONS..." 
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 3: Log */}
+              {/* Row 3: Operational Log & Buffer Sync */}
               {terminalUser?.role?.toLowerCase() !== 'dispatcher' ? (
-                <section className="tactical-card p-8 space-y-6 group">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <section className="tactical-card p-6 sm:p-8 space-y-6 group">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                      <h2 
                        style={{ color: labelStyle.color }}
                        className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors"
                      >
-                        <FileText className="w-4 h-4" /> Operational Log
+                        <FileText className="w-4 h-4" /> Operational Log & Other Issues
                      </h2>
                      <div className="flex items-center gap-4">
                        <button 
                           type="button" 
                           onClick={() => setShowPasteModal(true)}
-                          className="text-[9px] text-indigo-400 hover:text-indigo-300 flex items-center gap-2 uppercase font-black tracking-[0.2em] transition-colors"
+                          className="text-[9px] text-indigo-400 hover:text-indigo-300 flex items-center gap-2 uppercase font-black tracking-[0.2em] transition-colors cursor-pointer"
                        >
                          <Maximize2 className="w-3 h-3" /> System Fullscreen
                        </button>
@@ -1070,11 +842,11 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                     value={data.issues} 
                     onChange={handleChange} 
                     onKeyDown={handleTextareaTab}
-                    rows={10} 
-                    className="w-full tactical-input p-6 text-sm font-mono leading-relaxed text-white"
+                    rows={8} 
+                    className="w-full tactical-input p-5 text-sm font-mono leading-relaxed text-white"
                     placeholder="RECORD ALL SIGNIFICANT ACTIONS, FAILURES, AND RECOVERY STEPS..." 
                   />
-                  <div className="pt-4 mt-4 border-t border-white/5">
+                  <div className="pt-4 mt-4 border-t border-white/10">
                     <label 
                       style={{ 
                         color: labelStyle.color, 
@@ -1082,7 +854,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                       }}
                       className={`${labelStyle.fontWeight} ${labelStyle.textTransform} tracking-wider block mb-3 select-none transition-all`}
                     >
-                      Buffer Data / Roster Sync
+                      Buffer Data / Roster Sync Notes
                     </label>
                     <textarea 
                       name="pasteNotes" 
@@ -1094,28 +866,27 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                       placeholder="LOAD ROSTER DATA / TIME UP LOGS..." 
                     />
                   </div>
-
                 </section>
               ) : (
-                <section className="tactical-card p-12 flex flex-col items-center justify-center text-center gap-6 border-white/5 bg-white/[0.02]">
+                <section className="tactical-card p-12 flex flex-col items-center justify-center text-center gap-6 border-white/10 bg-white/[0.02]">
                   <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
                     <EyeOff className="w-8 h-8 text-indigo-500 animate-pulse" />
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-black text-white uppercase italic tracking-tight">Access Restricted</h3>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black leading-relaxed max-w-sm">
-                      The operational log is reserved for shift supervisors and administrative nodes. Please contact system admin for elevated clearance.
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black leading-relaxed max-w-sm">
+                      The operational log is reserved for shift supervisors and administrative nodes.
                     </p>
                   </div>
                 </section>
               )}
 
-              {/* Actions */}
-              <div className="mt-8 p-6 sm:p-8 tactical-card flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+              {/* Actions Footer Bar */}
+              <div className="tactical-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
                  <div className="absolute inset-0 bg-indigo-500/[0.02] pointer-events-none" />
                  <div className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-[0.25em] relative z-10">
                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)] animate-pulse" />
-                   Autosave Pulse Active {lastSaved ? `at ${lastSaved}` : 'now'}
+                   Autosave Buffer Active {lastSaved ? `at ${lastSaved}` : 'now'}
                  </div>
                  <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4 relative z-10 w-full md:w-auto">
                    <button 
@@ -1125,30 +896,6 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                    >
                      Clear Buffer
                    </button>
-                   <button 
-                     type="button" 
-                     onClick={async () => {
-                       const plainReport = buildReport();
-                       const htmlReport = buildHtmlReport();
-                       try {
-                         await saveReport({
-                           name: data.name,
-                           date: data.date,
-                           shift: data.shift,
-                           data: data,
-                           htmlReport: htmlReport,
-                           plainReport: plainReport
-                         });
-                         setShowToast("SYSTEM BACKUP COMPLETE");
-                         loadHistory();
-                       } catch (e) {
-                         setShowToast("BACKUP FAILURE");
-                       }
-                     }}
-                     className="px-4 py-2.5 text-[10px] font-black text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all uppercase tracking-[0.2em] rounded-xl cursor-pointer"
-                   >
-                     Manual Uplink
-                   </button>
                    <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 h-[48px] shadow-inner">
                      <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
                      <select 
@@ -1157,10 +904,18 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                        onChange={handleChange}
                        className="bg-transparent border-none text-xs font-black uppercase text-white outline-none cursor-pointer pr-2"
                      >
-                       <option value="Mid-Shift Report">Mid-Shift Report</option>
-                       <option value="End of Shift Report">End Of Shift Report</option>
+                       <option value="Mid-Shift Report" className="bg-slate-900">Mid-Shift Report</option>
+                       <option value="End of Shift Report" className="bg-slate-900">End Of Shift Report</option>
                      </select>
                    </div>
+                   <button 
+                     type="button"
+                     onClick={() => setShowPreviewDrawer(true)}
+                     className="px-5 h-[48px] bg-black/40 hover:bg-white/10 border border-white/10 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                   >
+                     <Eye className="w-4 h-4 text-indigo-400" />
+                     <span>Preview</span>
+                   </button>
                    <button 
                      type="button"
                      onClick={handleSend}
@@ -1173,432 +928,136 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                  </div>
               </div>
             </div>
-            <ShiftTurnover isEmbedded />
           </main>
         </LabelStyleContext.Provider>
       </div>
 
-      {/* Floating Toast */}
+      {/* Floating Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 glass-effect !bg-brand-bg/90 border-brand-indigo/30 text-white font-bold rounded-3xl shadow-2xl flex items-center gap-4 animate-bounce">
-          <div className="w-8 h-8 rounded-full bg-brand-indigo/20 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5 text-brand-indigo" />
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 glass-effect !bg-slate-950/90 border border-indigo-500/30 text-white font-bold rounded-3xl shadow-2xl flex items-center gap-4 animate-bounce">
+          <div className="w-8 h-8 rounded-full bg-indigo-600/20 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-indigo-400" />
           </div>
           <span className="text-sm tracking-tight">{showToast}</span>
         </div>
       )}
 
-      {/* Preview / Archive Drawer */}
+      {/* Live Report Preview Drawer */}
       <div className={`fixed inset-0 z-[120] transition-opacity duration-300 ${showPreviewDrawer ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div onClick={() => {
-          setShowPreviewDrawer(false);
-          setSelectedArchivedReport(null);
-        }} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
+        <div 
+          onClick={() => setShowPreviewDrawer(false)} 
+          className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+        />
         <aside 
-          className={`absolute top-0 right-0 h-full w-full max-w-lg bg-white/5 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${showPreviewDrawer ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute top-0 right-0 h-full w-full max-w-xl bg-slate-950/95 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${showPreviewDrawer ? 'translate-x-0' : 'translate-x-full'}`}
         >
-          <div className="p-8 border-b border-white/5 flex items-center justify-between">
+          <div className="p-6 sm:p-8 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
             <div>
-              <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-4">
-                {selectedArchivedReport ? <History className="w-7 h-7 text-indigo-600" /> : <Eye className="w-7 h-7 text-indigo-600" />}
+              <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-3 uppercase">
+                <Eye className="w-6 h-6 text-indigo-400" />
                 Report Preview
               </h3>
-              <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-black">
-                {selectedArchivedReport ? `ARCHIVED: ${selectedArchivedReport.date}` : 'Rich Text Snapshot'}
+              <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">
+                Rich Text Snapshot • Formatted for Email
               </p>
             </div>
             <button 
-              onClick={() => {
-                setShowPreviewDrawer(false);
-                setSelectedArchivedReport(null);
-              }}
-              className="p-3 hover:bg-white/5 rounded-2xl transition-colors text-slate-400"
+              onClick={() => setShowPreviewDrawer(false)}
+              className="p-2.5 hover:bg-white/10 rounded-2xl transition-colors text-slate-400 hover:text-white cursor-pointer"
             >
-              <X className="w-8 h-8" />
+              <X className="w-6 h-6" />
             </button>
           </div>
           
-          <div className="flex-1 p-8 overflow-y-auto scrollbar-thin bg-white/5">
-            <div className="bg-white/5 rounded-3xl p-10 shadow-inner min-h-full">
+          <div className="flex-1 p-6 sm:p-8 overflow-y-auto scrollbar-thin bg-black/20">
+            <div className="bg-white rounded-2xl p-8 text-black shadow-inner min-h-full">
               <div 
-                className="prose prose-slate max-w-none text-white selection:bg-brand-indigo/20"
+                className="prose max-w-none text-black"
                 style={{ fontFamily: 'Calibri, sans-serif' }}
-                dangerouslySetInnerHTML={{ 
-                  __html: selectedArchivedReport ? selectedArchivedReport.htmlReport : buildHtmlReport() 
-                }} 
+                dangerouslySetInnerHTML={{ __html: buildHtmlReport() }} 
               />
             </div>
           </div>
 
-          <div className="p-10 border-t border-white/10 bg-white/5">
-            <div className="space-y-6">
-              <button 
-                onClick={async () => {
-                  try {
-                    const plainContent = selectedArchivedReport ? selectedArchivedReport.plainReport : buildReport();
-                    const htmlContent = selectedArchivedReport ? selectedArchivedReport.htmlReport : buildHtmlReport();
+          <div className="p-6 sm:p-8 border-t border-white/10 bg-white/[0.02] space-y-6">
+            <button 
+              onClick={async () => {
+                try {
+                  const plainContent = buildReport();
+                  const htmlContent = buildHtmlReport();
 
-                    if (navigator.clipboard && window.ClipboardItem) {
-                      const typePlain = "text/plain";
-                      const typeHtml = "text/html";
-                      const blobPlain = new Blob([plainContent], { type: typePlain });
-                      const blobHtml = new Blob([htmlContent], { type: typeHtml });
-                      
-                      const clipboardData = [new ClipboardItem({
-                        [typePlain]: blobPlain,
-                        [typeHtml]: blobHtml
-                      })];
-                      
-                      await navigator.clipboard.write(clipboardData);
-                      setShowToast("Record copied! Ready to paste.");
-                    } else {
-                      await navigator.clipboard.writeText(plainContent);
-                      setShowToast("Plain text copied successfully.");
-                    }
-                  } catch (e) {
-                    console.error("Copy error:", e);
-                    setShowToast("Failed to access clipboard");
+                  if (navigator.clipboard && window.ClipboardItem) {
+                    const typePlain = "text/plain";
+                    const typeHtml = "text/html";
+                    const blobPlain = new Blob([plainContent], { type: typePlain });
+                    const blobHtml = new Blob([htmlContent], { type: typeHtml });
+                    
+                    const clipboardData = [new ClipboardItem({
+                      [typePlain]: blobPlain,
+                      [typeHtml]: blobHtml
+                    })];
+                    
+                    await navigator.clipboard.write(clipboardData);
+                    setShowToast("Rich HTML & Text copied! Ready to paste into email.");
+                  } else {
+                    await navigator.clipboard.writeText(plainContent);
+                    setShowToast("Plain text copied successfully.");
                   }
-                }}
-                className="w-full bg-brand-indigo hover:bg-indigo-600 text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-4 transition-all shadow-2xl shadow-indigo-500/20 active:scale-[0.98]"
-              >
-                <Clipboard className="w-6 h-6" /> Copy Report Format
-              </button>
-              
-              {!selectedArchivedReport && (
-                <div className="pt-8 border-t border-white/5 space-y-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Essential Resources</h4>
-                  <nav className="flex flex-col gap-3">
-                    <ExternalLinkItem href="https://drive.google.com/file/d/137BOp88NqFXFuoYJ-VBIR0n-xGfOq4_U/view?usp=drive_link" label="Coroner On Call" meta="Google Drive Access" />
-                    <ExternalLinkItem href="https://drive.google.com/file/d/1YRmQRgyxRjqlGWiBLsNaiYhmssqDeCet/view" label="911 SOG'S County" meta="Regulation Handbook" />
-                    <ExternalLinkItem href="https://drive.google.com/file/d/15IL2nx3foN5V4L2ue6OBAp8kmZkpWzma/view" label="Employee Handbook" meta="HR Policies" />
-                    <ExternalLinkItem href="https://docs.google.com/spreadsheets/d/1ywTY-EVDLJYfPsxKPDGLdNJStJ63W-_yYS-Y4CU31Bw/edit" label="Shift Calendar" meta="Live Roster Sync" />
-                  </nav>
-                </div>
-              )}
+                } catch (e) {
+                  console.error("Copy error:", e);
+                  setShowToast("Failed to access clipboard");
+                }
+              }}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all shadow-xl shadow-indigo-600/30 active:scale-[0.98] cursor-pointer"
+            >
+              <Clipboard className="w-4 h-4" /> Copy Email Rich Text Format
+            </button>
+            
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Essential Resources</h4>
+              <nav className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <ExternalLinkItem href="https://drive.google.com/file/d/137BOp88NqFXFuoYJ-VBIR0n-xGfOq4_U/view?usp=drive_link" label="Coroner On Call" meta="Google Drive Access" />
+                <ExternalLinkItem href="https://drive.google.com/file/d/1YRmQRgyxRjqlGWiBLsNaiYhmssqDeCet/view" label="911 SOG'S County" meta="Regulation Handbook" />
+                <ExternalLinkItem href="https://drive.google.com/file/d/15IL2nx3foN5V4L2ue6OBAp8kmZkpWzma/view" label="Employee Handbook" meta="HR Policies" />
+                <ExternalLinkItem href="https://docs.google.com/spreadsheets/d/1ywTY-EVDLJYfPsxKPDGLdNJStJ63W-_yYS-Y4CU31Bw/edit" label="Shift Calendar" meta="Live Roster Sync" />
+              </nav>
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Roster Modal */}
+      {/* Vector Stream / Roster Processing Modal */}
       {showPasteModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-          <div onClick={() => setShowPasteModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
-          <div className="relative w-full max-w-5xl bg-white/5 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col h-[90vh]">
-            <div className="p-10 border-b border-white/5 flex items-center justify-between bg-white/5">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+          <div onClick={() => setShowPasteModal(false)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" />
+          <div className="relative w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] z-10">
+            <div className="p-6 sm:p-8 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
               <div>
-                <h3 className="text-3xl font-black text-white tracking-tight uppercase">Roster Processing</h3>
-                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-black">Paste data grid from source system</p>
+                <h3 className="text-2xl font-black text-white tracking-tight uppercase">Roster Processing</h3>
+                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">Paste data grid from source system</p>
               </div>
               <button 
                 onClick={() => setShowPasteModal(false)} 
-                className="p-4 hover:bg-white/10 rounded-3xl transition-colors text-slate-500"
+                className="p-2.5 hover:bg-white/10 rounded-2xl transition-colors text-slate-400 hover:text-white cursor-pointer"
               >
-                <X className="w-10 h-10" />
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-10 flex-1 relative glass-effect bg-white/5">
+            <div className="p-6 sm:p-8 flex-1 relative bg-black/40">
               <textarea 
-                className="w-full h-full bg-white/5 text-white p-8 rounded-[2rem] border border-white/10 font-mono text-base resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium shadow-inner"
+                className="w-full h-full bg-black/50 text-white p-6 rounded-2xl border border-white/10 font-mono text-sm resize-none outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium shadow-inner"
                 placeholder="Ctrl+V roster data here..."
                 value={data.pasteNotes}
                 onChange={(e) => setData(prev => ({ ...prev, pasteNotes: e.target.value }))}
                 autoFocus
               />
             </div>
-            <div className="p-10 bg-white/5 flex justify-end gap-6 border-t border-white/5">
+            <div className="p-6 sm:p-8 bg-white/[0.02] flex justify-end gap-4 border-t border-white/10">
               <button 
                 onClick={() => setShowPasteModal(false)}
-                className="bg-emerald-600 hover:bg-emerald-700 px-14 py-5 rounded-3xl text-white font-black uppercase tracking-widest text-sm transition-all shadow-2xl shadow-emerald-500/20 active:scale-95"
+                className="bg-indigo-600 hover:bg-indigo-500 px-8 py-3.5 rounded-xl text-white font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-indigo-600/30 active:scale-95 cursor-pointer"
               >
                 Incorporate Data
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-          <div onClick={() => setShowHistory(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
-          <div className="relative w-full max-w-5xl bg-white/5 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col h-[90vh]">
-            <div className="p-10 border-b border-white/5 flex items-center justify-between bg-white/5">
-              <div>
-                <h3 className="text-3xl font-black text-white tracking-tight uppercase">Archive Inventory</h3>
-                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-black">Historical shift matrices & data streams</p>
-              </div>
-              <button onClick={() => setShowHistory(false)} className="p-4 hover:bg-white/10 rounded-3xl transition-colors text-slate-500">
-                <X className="w-10 h-10" />
-              </button>
-            </div>
-            <div className="p-10 flex-1 overflow-y-auto custom-scrollbar bg-white/5">
-              {loadingReports ? (
-                 <div className="flex flex-col items-center justify-center h-full gap-4">
-                   <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-                   <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Retrieving Encrypted Archives...</p>
-                 </div>
-              ) : archivedReports.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600">
-                   <History className="w-16 h-16 opacity-20" />
-                   <p className="text-xs font-black uppercase tracking-widest">No matching records found in archive</p>
-                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {archivedReports.map((report) => (
-                    <button
-                      key={report.id}
-                      onClick={() => {
-                        setSelectedArchivedReport(report);
-                        setData(report.data);
-                        setShowHistory(false);
-                        setShowToast("Archived report restored to buffer");
-                      }}
-                      className="group p-8 bg-white/5 border border-white/5 rounded-3xl hover:border-indigo-500/30 transition-all text-left relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Maximize2 className="w-4 h-4 text-indigo-400" />
-                      </div>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center border border-indigo-500/20">
-                          <FileText className="w-5 h-5 text-indigo-400" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SHIFT-{report.shift}</p>
-                          <p className="text-lg font-black text-white tracking-tight uppercase italic">{report.name || 'Anonymous'}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs font-mono text-slate-400">{report.date}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Backup & Export Modal */}
-      <BackupControlModal 
-        isOpen={showBackupModal} 
-        onClose={() => setShowBackupModal(false)} 
-        onRefreshData={loadHistory} 
-      />
-
-      {/* Label Text Appearance Customizer Modal */}
-      {showLabelModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
-          <div 
-            onClick={() => setShowLabelModal(false)} 
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity" 
-          />
-          <div className="relative w-full max-w-xl bg-slate-900/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10">
-            {/* Modal Header */}
-            <div className="p-6 sm:p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                  <Sliders className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-white tracking-tight uppercase">Box Prompt Text Style</h3>
-                  <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-black">
-                    Customize color & size of input labels & field headers
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowLabelModal(false)} 
-                className="p-2.5 hover:bg-white/10 rounded-2xl transition-colors text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[75vh] custom-scrollbar">
-              {/* Live Preview Box */}
-              <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-3 shadow-inner">
-                <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center justify-between">
-                  <span>Live Field Preview</span>
-                  <span className="text-indigo-400 font-mono">{labelStyle.fontSize}px • {labelStyle.color}</span>
-                </div>
-                <div className="space-y-2 pt-1">
-                  <div className="flex items-center gap-2 pl-2">
-                    <Activity style={{ color: labelStyle.color }} className="w-3.5 h-3.5 opacity-80" />
-                    <label 
-                      style={{ 
-                        color: labelStyle.color, 
-                        fontSize: `${labelStyle.fontSize}px` 
-                      }}
-                      className={`${labelStyle.fontWeight} ${labelStyle.textTransform} tracking-wider transition-all leading-none select-none`}
-                    >
-                      Sample Field Label Prompt
-                    </label>
-                  </div>
-                  <input 
-                    type="text" 
-                    disabled 
-                    value="Input text stays crisp and bright (10-4)" 
-                    className="w-full tactical-input p-3 text-xs font-mono text-white/90 cursor-default" 
-                  />
-                </div>
-              </div>
-
-              {/* Color Presets */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                    Prompt Text Color
-                  </label>
-                  <span className="text-[10px] font-mono text-slate-400">{labelStyle.color}</span>
-                </div>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
-                  {COLOR_PRESETS.map((preset) => {
-                    const isSelected = labelStyle.color.toLowerCase() === preset.hex.toLowerCase();
-                    return (
-                      <button
-                        key={preset.hex}
-                        type="button"
-                        onClick={() => updateLabelStyle({ color: preset.hex })}
-                        className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all cursor-pointer ${
-                          isSelected 
-                            ? 'bg-white/15 border-white shadow-lg scale-105' 
-                            : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
-                        }`}
-                        title={preset.name}
-                      >
-                        <span 
-                          className="w-6 h-6 rounded-full border border-white/20 shadow-inner flex items-center justify-center shrink-0" 
-                          style={{ backgroundColor: preset.hex }}
-                        >
-                          {isSelected && <Check className={`w-3.5 h-3.5 ${preset.hex === '#ffffff' || preset.hex === '#fbbf24' || preset.hex === '#a3e635' ? 'text-black' : 'text-white'}`} />}
-                        </span>
-                        <span className="text-[8px] font-black uppercase tracking-tight text-slate-400 truncate max-w-full">
-                          {preset.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom Color Input */}
-                <div className="flex items-center gap-3 pt-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Custom Hex:</span>
-                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 flex-1">
-                    <input 
-                      type="color" 
-                      value={labelStyle.color.startsWith('#') && labelStyle.color.length === 7 ? labelStyle.color : '#64748b'} 
-                      onChange={(e) => updateLabelStyle({ color: e.target.value })}
-                      className="w-6 h-6 rounded-lg bg-transparent border-0 cursor-pointer"
-                    />
-                    <input 
-                      type="text" 
-                      value={labelStyle.color} 
-                      onChange={(e) => updateLabelStyle({ color: e.target.value })}
-                      placeholder="#64748b" 
-                      className="bg-transparent border-none text-xs font-mono text-white outline-none w-full uppercase"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Size Selector & Slider */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                    Prompt Text Size
-                  </label>
-                  <span className="text-xs font-mono font-bold text-indigo-400">{labelStyle.fontSize}px</span>
-                </div>
-                
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                  {SIZE_PRESETS.map((preset) => {
-                    const isSelected = labelStyle.fontSize === preset.size;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => updateLabelStyle({ fontSize: preset.size })}
-                        className={`py-2 px-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer text-center ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
-                            : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        {preset.label} ({preset.size}px)
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center gap-4 pt-1">
-                  <span className="text-[9px] font-mono text-slate-500">8px</span>
-                  <input 
-                    type="range" 
-                    min={8} 
-                    max={20} 
-                    step={1}
-                    value={labelStyle.fontSize} 
-                    onChange={(e) => updateLabelStyle({ fontSize: parseInt(e.target.value, 10) })}
-                    className="w-full accent-indigo-500 cursor-pointer"
-                  />
-                  <span className="text-[9px] font-mono text-slate-500">20px</span>
-                </div>
-              </div>
-
-              {/* Style Controls (Weight & Transform) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Font Weight
-                  </label>
-                  <select
-                    value={labelStyle.fontWeight}
-                    onChange={(e) => updateLabelStyle({ fontWeight: e.target.value as LabelStyleConfig['fontWeight'] })}
-                    className="w-full bg-white/5 border border-white/10 text-white text-xs font-medium rounded-xl p-2.5 outline-none focus:border-indigo-500/50"
-                  >
-                    <option value="font-normal" className="bg-slate-900">Normal (400)</option>
-                    <option value="font-medium" className="bg-slate-900">Medium (500)</option>
-                    <option value="font-bold" className="bg-slate-900">Bold (700)</option>
-                    <option value="font-black" className="bg-slate-900">Heavy Black (900)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Letter Casing
-                  </label>
-                  <select
-                    value={labelStyle.textTransform}
-                    onChange={(e) => updateLabelStyle({ textTransform: e.target.value as LabelStyleConfig['textTransform'] })}
-                    className="w-full bg-white/5 border border-white/10 text-white text-xs font-medium rounded-xl p-2.5 outline-none focus:border-indigo-500/50"
-                  >
-                    <option value="uppercase" className="bg-slate-900">UPPERCASE</option>
-                    <option value="normal-case" className="bg-slate-900">Standard Text</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 bg-white/[0.02] border-t border-white/5 flex items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={resetLabelStyle}
-                className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
-              >
-                Reset Default
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLabelModal(false);
-                  setShowToast("Label prompt styles applied");
-                }}
-                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 cursor-pointer"
-              >
-                Apply & Save
               </button>
             </div>
           </div>
@@ -1612,8 +1071,8 @@ function Field({ label, children, icon: Icon }: { label: string; children: React
   const { color, fontSize, fontWeight, textTransform } = useLabelStyle();
 
   return (
-    <div className="flex flex-col gap-2.5 group/field">
-      <div className="flex items-center gap-2 pl-3">
+    <div className="flex flex-col gap-2 group/field">
+      <div className="flex items-center gap-2 pl-2">
         {Icon && (
           <Icon 
             style={{ color: color }} 
@@ -1632,7 +1091,7 @@ function Field({ label, children, icon: Icon }: { label: string; children: React
       </div>
       <div className="relative group">
         {React.cloneElement(children as React.ReactElement<any>, {
-          className: `w-full tactical-input p-4 text-xs font-mono relative z-10 text-white ${(children as any).props?.className || ''}`
+          className: `w-full tactical-input p-3.5 text-xs font-mono relative z-10 text-white ${(children as any).props?.className || ''}`
         })}
         <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/[0.02] transition-colors pointer-events-none rounded-xl" />
       </div>
@@ -1646,51 +1105,13 @@ function ExternalLinkItem({ href, label, meta }: { href: string; label: string; 
       href={href} 
       target="_blank" 
       rel="noopener noreferrer"
-      className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 group transition-all"
+      className="p-3.5 rounded-xl bg-black/40 border border-white/10 hover:border-indigo-500/40 hover:bg-white/[0.04] group transition-all"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{label}</span>
-        <ArrowRight className="w-4 h-4 text-indigo-500 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+        <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{label}</span>
+        <ArrowRight className="w-3.5 h-3.5 text-indigo-400 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
       </div>
-      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1 block">{meta}</span>
+      <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest mt-1 block">{meta}</span>
     </a>
-  );
-}
-
-function PendingUpdatesSync({ onAppend }: { onAppend: (text: string) => void }) {
-  const [pending, setPending] = useState<any[]>([]);
-
-  useEffect(() => {
-    const q = query(collection(db, 'shift_updates'), orderBy('timestamp', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter((d: any) => d.status === 'pending');
-      setPending(docs);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleSync = async () => {
-    if (pending.length === 0) return;
-    const combinedText = pending.map(p => `[${format(p.timestamp?.toDate() || new Date(), 'HH:mm')}] ${p.content}`).join('\n');
-    onAppend(combinedText);
-    
-    // Mark as processed
-    for (const p of pending) {
-      await updateDoc(doc(db, 'shift_updates', p.id), { status: 'processed' });
-    }
-  };
-
-  if (pending.length === 0) return null;
-
-  return (
-    <button 
-      onClick={handleSync}
-      className="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[9px] font-black text-indigo-400 uppercase tracking-widest animate-pulse hover:bg-indigo-500/20 transition-all"
-    >
-      <Plus className="w-3 h-3" />
-      {pending.length} New Updates Available
-    </button>
   );
 }
