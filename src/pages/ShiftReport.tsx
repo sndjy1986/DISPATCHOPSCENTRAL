@@ -358,16 +358,16 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
 
   const buildHtmlReport = () => {
     const parts: string[] = [];
-    const dataStyle = 'font-family: Calibri, sans-serif; font-size: 16pt; margin: 0; line-height: 1.4; color: #000;';
-    // +4 font size over 16pt body = 20pt, bold, and underlined
-    const headerStyle = 'font-family: Calibri, sans-serif; font-size: 20pt; font-weight: bold; text-decoration: underline; margin-top: 8px; margin-bottom: 4px; color: #000;';
+    const dataStyle = 'font-family: Calibri, Helvetica, Arial, sans-serif; font-size: 13pt; mso-ansi-font-size: 13.0pt; margin: 0 0 2pt 0; line-height: 1.4; color: #000000;';
+    const headerStyle = 'font-family: Calibri, Helvetica, Arial, sans-serif; font-size: 20pt; mso-ansi-font-size: 20.0pt; mso-bidi-font-size: 20.0pt; font-weight: bold; text-decoration: underline; margin-top: 14pt; margin-bottom: 3pt; padding: 0; color: #000000; line-height: 1.2;';
 
     const addHtmlSection = (title: string, content: string | string[], isTabular: boolean = false) => {
       if (parts.length > 0) {
-        parts.push('<div style="height: 18pt;">&nbsp;</div>');
+        parts.push('<p style="margin: 0; line-height: 12pt; font-size: 12pt;">&nbsp;</p>');
       }
 
-      parts.push(`<div style="${headerStyle}"><u style="text-decoration: underline;"><strong><span style="font-size: 20pt;">**${title}**</span></strong></u></div>`);
+      // 5-layer size guarantee: h2 + font size="5" + span 20pt + inline CSS + mso-ansi-font-size
+      parts.push(`<h2 style="${headerStyle}"><u><strong><font size="5" style="font-size: 20pt; mso-ansi-font-size: 20.0pt;"><span style="font-size: 20pt; font-family: Calibri, Helvetica, Arial, sans-serif; mso-ansi-font-size: 20.0pt;">**${title}**</span></font></strong></u></h2>`);
       
       if (Array.isArray(content)) {
         content.forEach(line => {
@@ -375,9 +375,9 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
           if (colonIndex !== -1) {
             const label = line.substring(0, colonIndex);
             const value = line.substring(colonIndex + 2);
-            parts.push(`<div style="${dataStyle}"><strong>${label}:</strong> ${value}</div>`);
+            parts.push(`<p style="${dataStyle}"><font size="3" style="font-size: 13pt; mso-ansi-font-size: 13.0pt;"><strong>${label}:</strong> ${value}</font></p>`);
           } else {
-            parts.push(`<div style="${dataStyle}">${line}</div>`);
+            parts.push(`<p style="${dataStyle}"><font size="3" style="font-size: 13pt; mso-ansi-font-size: 13.0pt;">${line}</font></p>`);
           }
         });
       } else {
@@ -388,12 +388,12 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
             const rows = lines.map(line => line.split(/\t|\s{2,}/).map(cell => cell.trim()));
             const widths = ["20%", "14%", "13%", "34%", "19%"];
 
-            let table = `<table style="border-collapse: collapse; width: auto; max-width: 100%; border: 1px solid #000; font-family: Calibri, sans-serif; font-size: 16pt; margin-top: 4px;">`;
+            let table = `<table style="border-collapse: collapse; width: auto; max-width: 100%; border: 1px solid #000; font-family: Calibri, Helvetica, Arial, sans-serif; font-size: 12pt; margin-top: 4px;">`;
             rows.forEach((row, rowIndex) => {
               table += `<tr>`;
               for (let i = 0; i < 5; i++) {
                 const cell = row[i] || "";
-                const cellStyle = `border: 1px solid #000; padding: 4px 8px; text-align: left; width: ${widths[i] || "auto"}; min-width: 50px;`;
+                const cellStyle = `border: 1px solid #000; padding: 4px 8px; text-align: left; width: ${widths[i] || "auto"}; min-width: 50px; font-family: Calibri, Helvetica, Arial, sans-serif; font-size: 12pt;`;
                 if (rowIndex === 0) {
                   table += `<th style="${cellStyle} background-color: #D9D9D9; font-weight: bold;">${cell}</th>`;
                 } else {
@@ -405,16 +405,16 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
             table += `</table>`;
             parts.push(table);
           } else {
-            parts.push(`<div style="${dataStyle}">None</div>`);
+            parts.push(`<p style="${dataStyle}"><font size="3" style="font-size: 13pt; mso-ansi-font-size: 13.0pt;">None</font></p>`);
           }
         } else if (text) {
           const lines = text.split(/\r?\n/);
           lines.forEach(line => {
             const formattedLine = line.replace(/ /g, "&nbsp;") || "&nbsp;";
-            parts.push(`<div style="${dataStyle}">${formattedLine}</div>`);
+            parts.push(`<p style="${dataStyle}"><font size="3" style="font-size: 13pt; mso-ansi-font-size: 13.0pt;">${formattedLine}</font></p>`);
           });
         } else {
-          parts.push(`<div style="${dataStyle}">None</div>`);
+          parts.push(`<p style="${dataStyle}"><font size="3" style="font-size: 13pt; mso-ansi-font-size: 13.0pt;">None</font></p>`);
         }
       }
     };
@@ -463,28 +463,78 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
     return parts.join("\n");
   };
 
+  const copyReportToClipboard = async (plainReport: string, htmlReport: string) => {
+    const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Shift Report</title>
+<style>
+  h2 { font-family: Calibri, Helvetica, Arial, sans-serif !important; font-size: 20pt !important; mso-ansi-font-size: 20.0pt !important; mso-bidi-font-size: 20.0pt !important; font-weight: bold !important; text-decoration: underline !important; color: #000000 !important; margin-top: 14pt !important; margin-bottom: 3pt !important; }
+  p { font-family: Calibri, Helvetica, Arial, sans-serif !important; font-size: 13pt !important; mso-ansi-font-size: 13.0pt !important; color: #000000 !important; margin: 0 0 2pt 0 !important; line-height: 1.4 !important; }
+  u { text-decoration: underline !important; }
+  strong { font-weight: bold !important; }
+</style>
+</head>
+<body style="font-family: Calibri, Helvetica, Arial, sans-serif; font-size: 13pt; color: #000000; margin: 0; padding: 10px;">
+<!--StartFragment-->
+${htmlReport}
+<!--EndFragment-->
+</body>
+</html>`;
+
+    let copied = false;
+
+    // 1. Primary: Async Clipboard API with text/plain and text/html
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+          "text/plain": new Blob([plainReport], { type: "text/plain" }),
+          "text/html": new Blob([fullHtml], { type: "text/html" })
+        });
+        await navigator.clipboard.write([item]);
+        copied = true;
+      }
+    } catch (e) {
+      console.warn("Async Clipboard API error, attempting fallback:", e);
+    }
+
+    // 2. Fallback: execCommand copy with rich clipboardData injection
+    if (!copied) {
+      try {
+        const copyHandler = (e: ClipboardEvent) => {
+          e.preventDefault();
+          if (e.clipboardData) {
+            e.clipboardData.setData('text/html', fullHtml);
+            e.clipboardData.setData('text/plain', plainReport);
+          }
+        };
+        document.addEventListener('copy', copyHandler);
+        copied = document.execCommand('copy');
+        document.removeEventListener('copy', copyHandler);
+      } catch (e) {
+        console.warn("execCommand copy error:", e);
+      }
+    }
+
+    // 3. Fallback: plain text only
+    if (!copied) {
+      try {
+        await navigator.clipboard.writeText(plainReport);
+        copied = true;
+      } catch (e) {}
+    }
+
+    return copied;
+  };
+
   const handleSend = async () => {
     const plainReport = buildReport();
     const htmlReport = buildHtmlReport();
 
     try {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const typePlain = "text/plain";
-        const typeHtml = "text/html";
-        const blobPlain = new Blob([plainReport], { type: typePlain });
-        const blobHtml = new Blob([htmlReport], { type: typeHtml });
-        
-        const clipboardItems = [new ClipboardItem({
-          [typePlain]: blobPlain,
-          [typeHtml]: blobHtml
-        })];
-        
-        await navigator.clipboard.write(clipboardItems);
-        setShowToast("Report Copied to Clipboard! Launching Email...");
-      } else {
-        await navigator.clipboard.writeText(plainReport);
-        setShowToast("Report Copied to Clipboard! Launching Email...");
-      }
+      await copyReportToClipboard(plainReport, htmlReport);
+      setShowToast("Report Copied to Clipboard! Launching Email...");
     } catch (err) {
       console.error("Clipboard error:", err);
       setShowToast("Launching email...");
@@ -972,7 +1022,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
           <div className="flex-1 p-6 sm:p-8 overflow-y-auto scrollbar-thin bg-black/20">
             <div className="bg-white rounded-2xl p-8 text-black shadow-inner min-h-full">
               <div 
-                className="prose max-w-none text-black"
+                className="max-w-none text-black selection:bg-indigo-500/20"
                 style={{ fontFamily: 'Calibri, sans-serif' }}
                 dangerouslySetInnerHTML={{ __html: buildHtmlReport() }} 
               />
@@ -985,24 +1035,8 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
                 try {
                   const plainContent = buildReport();
                   const htmlContent = buildHtmlReport();
-
-                  if (navigator.clipboard && window.ClipboardItem) {
-                    const typePlain = "text/plain";
-                    const typeHtml = "text/html";
-                    const blobPlain = new Blob([plainContent], { type: typePlain });
-                    const blobHtml = new Blob([htmlContent], { type: typeHtml });
-                    
-                    const clipboardData = [new ClipboardItem({
-                      [typePlain]: blobPlain,
-                      [typeHtml]: blobHtml
-                    })];
-                    
-                    await navigator.clipboard.write(clipboardData);
-                    setShowToast("Rich HTML & Text copied! Ready to paste into email.");
-                  } else {
-                    await navigator.clipboard.writeText(plainContent);
-                    setShowToast("Plain text copied successfully.");
-                  }
+                  await copyReportToClipboard(plainContent, htmlContent);
+                  setShowToast("Rich HTML & Text copied! Ready to paste into email.");
                 } catch (e) {
                   console.error("Copy error:", e);
                   setShowToast("Failed to access clipboard");
