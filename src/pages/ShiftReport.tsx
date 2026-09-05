@@ -644,13 +644,13 @@ ${htmlReport}
                   </div>
                   <div className="space-y-5">
                     <Field label="Name" icon={UserCheck}>
-                      <select name="name" value={data.name} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="name" value={data.name} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {Object.entries(shiftTeams).map(([shiftName, team]) => (
-                          <optgroup key={shiftName} label={`${shiftName} Shift`}>
-                            {team.lead && <option value={team.lead}>{team.lead} (Lead)</option>}
+                          <optgroup key={shiftName} label={`${shiftName} Shift`} className="bg-[#030712] text-indigo-400 font-bold">
+                            {team.lead && <option value={team.lead} className="bg-[#0b0f17] text-white">{team.lead} (Lead)</option>}
                             {team.members.map(m => (
-                              <option key={m} value={m}>{m}</option>
+                              <option key={m} value={m} className="bg-[#0b0f17] text-white">{m}</option>
                             ))}
                           </optgroup>
                         ))}
@@ -660,8 +660,8 @@ ${htmlReport}
                       <input type="date" name="date" value={data.date} onChange={handleChange} />
                     </Field>
                     <Field label="Shift" icon={Activity}>
-                      <select name="shift" value={data.shift} onChange={handleChange}>
-                        {SHIFTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      <select name="shift" value={data.shift} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        {SHIFTS.map(s => <option key={s} value={s} className="bg-[#0b0f17] text-white">{s}</option>)}
                       </select>
                     </Field>
                   </div>
@@ -678,39 +678,39 @@ ${htmlReport}
                   </div>
                   <div className="space-y-5">
                     <Field label="Radio Ch. 1" icon={Radio}>
-                      <select name="channel1" value={data.channel1} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="channel1" value={data.channel1} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {Object.entries(shiftTeams).map(([shiftName, team]) => (
-                          <optgroup key={shiftName} label={`${shiftName} Shift`}>
-                            {team.lead && <option value={team.lead}>{team.lead}</option>}
+                          <optgroup key={shiftName} label={`${shiftName} Shift`} className="bg-[#030712] text-indigo-400 font-bold">
+                            {team.lead && <option value={team.lead} className="bg-[#0b0f17] text-white">{team.lead}</option>}
                             {team.members.map(m => (
-                              <option key={m} value={m}>{m}</option>
+                              <option key={m} value={m} className="bg-[#0b0f17] text-white">{m}</option>
                             ))}
                           </optgroup>
                         ))}
                       </select>
                     </Field>
                     <Field label="Radio Ch. 2" icon={Shield}>
-                      <select name="channel2" value={data.channel2} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="channel2" value={data.channel2} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {Object.entries(shiftTeams).map(([shiftName, team]) => (
-                          <optgroup key={shiftName} label={`${shiftName} Shift`}>
-                            {team.lead && <option value={team.lead}>{team.lead}</option>}
+                          <optgroup key={shiftName} label={`${shiftName} Shift`} className="bg-[#030712] text-indigo-400 font-bold">
+                            {team.lead && <option value={team.lead} className="bg-[#0b0f17] text-white">{team.lead}</option>}
                             {team.members.map(m => (
-                              <option key={m} value={m}>{m}</option>
+                              <option key={m} value={m} className="bg-[#0b0f17] text-white">{m}</option>
                             ))}
                           </optgroup>
                         ))}
                       </select>
                     </Field>
                     <Field label="Third Person" icon={Users}>
-                      <select name="thirdPerson" value={data.thirdPerson} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="thirdPerson" value={data.thirdPerson} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {Object.entries(shiftTeams).map(([shiftName, team]) => (
-                          <optgroup key={shiftName} label={`${shiftName} Shift`}>
-                            {team.lead && <option value={team.lead}>{team.lead}</option>}
+                          <optgroup key={shiftName} label={`${shiftName} Shift`} className="bg-[#030712] text-indigo-400 font-bold">
+                            {team.lead && <option value={team.lead} className="bg-[#0b0f17] text-white">{team.lead}</option>}
                             {team.members.map(m => (
-                              <option key={m} value={m}>{m}</option>
+                              <option key={m} value={m} className="bg-[#0b0f17] text-white">{m}</option>
                             ))}
                           </optgroup>
                         ))}
@@ -730,15 +730,15 @@ ${htmlReport}
                   </div>
                   <div className="space-y-5">
                     <Field label="ALSSUP" icon={Activity}>
-                      <select name="alssup" value={data.alssup} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
-                        {alssupList.map(a => <option key={a}>{a}</option>)}
+                      <select name="alssup" value={data.alssup} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
+                        {alssupList.map(a => <option key={a} value={a} className="bg-[#0b0f17] text-white">{a}</option>)}
                       </select>
                     </Field>
                     <Field label="MEDSUP" icon={Globe}>
-                      <select name="medsup" value={data.medsup} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
-                        {Object.keys(supervisors).map(m => <option key={m} value={m}>{m}</option>)}
+                      <select name="medsup" value={data.medsup} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
+                        {Object.keys(supervisors).map(m => <option key={m} value={m} className="bg-[#0b0f17] text-white">{m}</option>)}
                       </select>
                     </Field>
                   </div>
@@ -764,21 +764,21 @@ ${htmlReport}
                       <input type="number" name="truckGT" value={data.truckGT} onChange={handleChange} min="0" />
                     </Field>
                     <Field label="Zulu Primary" icon={Zap}>
-                      <select name="zuluPrimary" value={data.zuluPrimary} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="zuluPrimary" value={data.zuluPrimary} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {data.zuluPrimary && !zuluList.includes(data.zuluPrimary) && (
-                          <option value={data.zuluPrimary}>{data.zuluPrimary}</option>
+                          <option value={data.zuluPrimary} className="bg-[#0b0f17] text-white">{data.zuluPrimary}</option>
                         )}
-                        {zuluList.map(z => <option key={z} value={z}>{z}</option>)}
+                        {zuluList.map(z => <option key={z} value={z} className="bg-[#0b0f17] text-white">{z}</option>)}
                       </select>
                     </Field>
                     <Field label="Zulu Secondary" icon={Zap}>
-                      <select name="zuluSecondary" value={data.zuluSecondary} onChange={handleChange}>
-                        <option value="">-- SELECT --</option>
+                      <select name="zuluSecondary" value={data.zuluSecondary} onChange={handleChange} className="bg-[#0b0f17] text-white cursor-pointer">
+                        <option value="" className="bg-[#0b0f17] text-slate-400">-- SELECT --</option>
                         {data.zuluSecondary && !zuluList.includes(data.zuluSecondary) && (
-                          <option value={data.zuluSecondary}>{data.zuluSecondary}</option>
+                          <option value={data.zuluSecondary} className="bg-[#0b0f17] text-white">{data.zuluSecondary}</option>
                         )}
-                        {zuluList.map(z => <option key={z} value={z}>{z}</option>)}
+                        {zuluList.map(z => <option key={z} value={z} className="bg-[#0b0f17] text-white">{z}</option>)}
                       </select>
                     </Field>
                     <Field label="ALS Transport" icon={Shield}>
@@ -1109,7 +1109,7 @@ function Field({ label, children, icon: Icon }: { label: string; children: React
       </div>
       <div className="relative group">
         {React.cloneElement(children as React.ReactElement<any>, {
-          className: `w-full tactical-input p-3.5 text-xs font-mono relative z-10 text-white ${(children as any).props?.className || ''}`
+          className: `w-full tactical-input p-3.5 text-xs font-mono relative z-10 text-white bg-[#0b0f17] ${children.type === 'select' ? 'cursor-pointer' : ''} ${(children as any).props?.className || ''}`
         })}
         <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/[0.02] transition-colors pointer-events-none rounded-xl" />
       </div>
