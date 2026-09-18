@@ -266,7 +266,7 @@ ${finalData.specialEvents || "None"}
         return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
       };
 
-      const subject = `Shift Turnover Report - ${formatDateForSubject(turnoverData.date)}`;
+      const subject = `Shift Turnover Report ${formatDateForSubject(turnoverData.date)}`;
       const body = `*** FULL TURNOVER REPORT COPIED TO CLIPBOARD ***\n\nSummary:\n- Current Lead: ${turnoverData.currentTeamLead}\n- Oncoming Lead: ${turnoverData.oncomingTeamLead}\n- Date: ${turnoverData.date}\n\nClick here and press Ctrl+V to paste the detailed handover report.`;
       
       let mailto = `mailto:${encodeURIComponent(toList)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { useLocation } from 'react-router-dom';
 import { useTerminal } from '../context/TerminalContext';
 import { 
@@ -264,6 +266,20 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
     }
   };
 
+  
+  
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
+  };
+
+  const formatDateForDisplay = (dStr: string) => {
+    if (!dStr) return "N/A";
+    const parts = dStr.split('-');
+    if (parts.length === 3) return `${parts[1]}/${parts[2]}/${parts[0]}`;
+    return dStr;
+  };
+
   const buildReport = () => {
     const reportParts: string[] = [];
 
@@ -313,7 +329,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
 
     addSection("Info", [
       `Name: ${data.name || "N/A"}`,
-      `Date: ${data.date || "N/A"}`,
+      `Date: ${formatDateForDisplay(data.date)}`,
       `Shift: ${data.shift}`
     ]);
 
@@ -420,7 +436,7 @@ export default function ShiftReport({ isModal, onClose }: { isModal?: boolean; o
 
     addHtmlSection("Info", [
       `Name: ${data.name || "N/A"}`,
-      `Date: ${data.date || "N/A"}`,
+      `Date: ${formatDateForDisplay(data.date)}`,
       `Shift: ${data.shift}`
     ]);
 
@@ -540,9 +556,9 @@ ${htmlReport}
     }
 
     const reportSubjectType = data.reportType || "Mid-Shift Report";
-    const reportDate = data.date || format(new Date(), 'yyyy-MM-dd');
-    const subject = `${reportSubjectType} - ${reportDate}`;
-    const body = `*** FULL REPORT COPIED TO CLIPBOARD ***\n\nSummary:\n- Supervisor: ${data.name}\n- Date: ${data.date}\n\nClick here and press Ctrl+V to paste the detailed report.`;
+    const reportDate = data.date ? formatDateForDisplay(data.date) : format(new Date(), 'MM/dd/yyyy');
+    const subject = `${reportSubjectType} ${reportDate}`;
+    const body = `*** FULL REPORT COPIED TO CLIPBOARD ***\n\nSummary:\n- Supervisor: ${data.name}\n- Date: ${formatDateForDisplay(data.date)}\n\nClick here and press Ctrl+V to paste the detailed report.`;
     
     let cc = CC_EMAIL;
     const medSupEmail = data.medsup ? supervisors[data.medsup] : null;
@@ -871,15 +887,13 @@ ${htmlReport}
                        <div className="w-24 h-[1px] bg-gradient-to-r from-indigo-500/30 to-transparent" />
                      </div>
                   </div>
-                  <textarea 
-                    name="issues" 
+                  <div className="bg-white/5 rounded"><ReactQuill 
+                    theme="snow"
                     value={data.issues} 
-                    onChange={handleChange} 
-                    onKeyDown={handleTextareaTab}
-                    rows={8} 
-                    className="w-full tactical-input p-5 text-sm font-mono leading-relaxed text-white"
+                    onChange={(val) => setData({...data, issues: val})} 
+                    className="text-white"
                     placeholder="RECORD ALL SIGNIFICANT ACTIONS, FAILURES, AND RECOVERY STEPS..." 
-                  />
+                  /></div>
                   <div className="pt-4 mt-4 border-t border-white/10">
                     <label 
                       style={{ 
@@ -890,15 +904,13 @@ ${htmlReport}
                     >
                       Buffer Data / Roster Sync Notes
                     </label>
-                    <textarea 
-                      name="pasteNotes" 
+                    <div className="bg-white/5 rounded"><ReactQuill 
+                      theme="snow"
                       value={data.pasteNotes} 
-                      onChange={handleChange} 
-                      onKeyDown={handleTextareaTab}
-                      rows={4} 
-                      className="w-full tactical-input p-4 text-xs font-mono text-white"
+                      onChange={(val) => setData({...data, pasteNotes: val})} 
+                      className="text-white"
                       placeholder="LOAD ROSTER DATA / TIME UP LOGS..." 
-                    />
+                    /></div>
                   </div>
                 </section>
               ) : (

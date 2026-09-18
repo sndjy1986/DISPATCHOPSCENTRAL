@@ -638,3 +638,4 @@ body {
     100% { transform: translateX(-100%); }
   }
 }
+.ql-editor { min-height: 150px; color: white; }

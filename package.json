@@ -29,6 +29,7 @@
     "react-dom": "^19.0.1",
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^6.30.3",
     "tailwind-merge": "^3.5.0",
     "vite": "^6.2.3"
@@ -42,4 +43,3 @@
     "typescript": "~5.8.2"
   }
 }
-
