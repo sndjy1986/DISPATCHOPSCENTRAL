@@ -66,7 +66,7 @@ export const MEDSUP_MAP: Record<string, string> = {
 
 export const MEDSUP_OPTIONS = Object.keys(MEDSUP_MAP);
 
-export const BASE_REPORT_EMAILS = "gwilliams@medshore.com" ,";" "cgaillard@medshore.com";
+export const BASE_REPORT_EMAILS = "gwilliams@medshore.com  ; cgaillard@medshore.com";
 export const CC_EMAIL = "asanders@medshore.com";
 
 export const SHIFTS = ["A-Shift", "B-Shift", "C-Shift", "D-Shift"];
