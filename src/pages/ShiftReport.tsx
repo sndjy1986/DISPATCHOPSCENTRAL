@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
+import Editor from 'react-simple-wysiwyg';
 import { useLocation } from 'react-router-dom';
 import { useTerminal } from '../context/TerminalContext';
 import { 
@@ -885,7 +886,10 @@ ${htmlReport}
                        <div className="w-24 h-[1px] bg-gradient-to-r from-indigo-500/30 to-transparent" />
                      </div>
                   </div>
-                  <textarea name="issues" value={data.issues} onChange={handleChange} onKeyDown={handleTextareaTab} rows={8} className="w-full tactical-input p-5 text-sm font-mono leading-relaxed text-white" placeholder="RECORD ALL SIGNIFICANT ACTIONS, FAILURES, AND RECOVERY STEPS..." />
+                  <div className="bg-[#0b0f17]/50 rounded border border-white/10" style={{minHeight: "150px", color: "white"}}><Editor 
+                    value={data.issues} 
+                    onChange={(e) => setData({...data, issues: e.target.value})} 
+                  /></div>
                   <div className="pt-4 mt-4 border-t border-white/10">
                     <label 
                       style={{ 
@@ -896,7 +900,10 @@ ${htmlReport}
                     >
                       Buffer Data / Roster Sync Notes
                     </label>
-                    <textarea name="pasteNotes" value={data.pasteNotes} onChange={handleChange} onKeyDown={handleTextareaTab} rows={4} className="w-full tactical-input p-4 text-xs font-mono text-white" placeholder="LOAD ROSTER DATA / TIME UP LOGS..." />
+                    <div className="bg-[#0b0f17]/50 rounded border border-white/10" style={{minHeight: "100px", color: "white"}}><Editor 
+                      value={data.pasteNotes} 
+                      onChange={(e) => setData({...data, pasteNotes: e.target.value})} 
+                    /></div>
                   </div>
                 </section>
               ) : (
