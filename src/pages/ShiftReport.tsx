@@ -5,8 +5,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import { useLocation } from 'react-router-dom';
 import { useTerminal } from '../context/TerminalContext';
 import { 
@@ -887,13 +885,7 @@ ${htmlReport}
                        <div className="w-24 h-[1px] bg-gradient-to-r from-indigo-500/30 to-transparent" />
                      </div>
                   </div>
-                  <div className="bg-white/5 rounded"><ReactQuill 
-                    theme="snow"
-                    value={data.issues} 
-                    onChange={(val) => setData({...data, issues: val})} 
-                    className="text-white"
-                    placeholder="RECORD ALL SIGNIFICANT ACTIONS, FAILURES, AND RECOVERY STEPS..." 
-                  /></div>
+                  <textarea name="issues" value={data.issues} onChange={handleChange} onKeyDown={handleTextareaTab} rows={8} className="w-full tactical-input p-5 text-sm font-mono leading-relaxed text-white" placeholder="RECORD ALL SIGNIFICANT ACTIONS, FAILURES, AND RECOVERY STEPS..." />
                   <div className="pt-4 mt-4 border-t border-white/10">
                     <label 
                       style={{ 
@@ -904,13 +896,7 @@ ${htmlReport}
                     >
                       Buffer Data / Roster Sync Notes
                     </label>
-                    <div className="bg-white/5 rounded"><ReactQuill 
-                      theme="snow"
-                      value={data.pasteNotes} 
-                      onChange={(val) => setData({...data, pasteNotes: val})} 
-                      className="text-white"
-                      placeholder="LOAD ROSTER DATA / TIME UP LOGS..." 
-                    /></div>
+                    <textarea name="pasteNotes" value={data.pasteNotes} onChange={handleChange} onKeyDown={handleTextareaTab} rows={4} className="w-full tactical-input p-4 text-xs font-mono text-white" placeholder="LOAD ROSTER DATA / TIME UP LOGS..." />
                   </div>
                 </section>
               ) : (
