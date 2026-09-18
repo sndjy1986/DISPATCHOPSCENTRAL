@@ -239,8 +239,7 @@ ${finalData.specialEvents || "None"}
       const oncomingEmail = oncomingLeadObj?.email || '';
       
       const toList = [
-        "gwilliams@medshore.com",
-        "cgaillard@medshore.com"
+        "gwilliams@medshore.com"
       ].filter(Boolean).join(";");
 
       const getShiftEmails = (leadName: string) => {
